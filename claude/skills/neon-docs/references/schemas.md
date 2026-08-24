@@ -4,7 +4,7 @@ Every file in `docs/proposals`, `docs/plans`, `docs/issues`, `docs/observations`
 ADR in `docs/architecture` opens with YAML frontmatter. `scripts/validate.py` enforces what
 follows.
 
-**Events** (`decisions` `issues` `proposals` `plans` `observations`) are named
+**Events** (`decisions` `issues` `proposals` `plans` `observations` `research`) are named
 **`YYYY-MM-DD-lowercase-slug.md`**, and the filename stem *is* the id. The directory carries
 the type, so there is no prefix.
 
@@ -109,6 +109,26 @@ instance; wait for recurrence before writing "always".
 
 ---
 
+## research
+
+```yaml
+---
+id: 2026-08-24-narrated-deck-formats
+title: Human-readable title
+status: current
+conducted: 2026-08-24
+sources: [https://example.com/a, https://example.com/b]
+supersedes: [2026-05-01-earlier-scan]   # optional
+---
+```
+
+**status:** `current` · `superseded`
+
+`sources` is warned on if absent from a `current` scan. Supersede rather than edit — a
+decision that cited this must keep pointing at what it actually said.
+
+---
+
 ## decisions
 
 ```yaml
@@ -117,6 +137,7 @@ id: 2026-08-23-effect-for-error-handling
 title: Human-readable title
 status: accepted
 decided: 2026-08-23
+research: [2026-08-24-narrated-deck-formats]   # optional; must resolve
 supersedes: []               # optional
 ---
 ```

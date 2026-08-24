@@ -54,6 +54,11 @@ def build_graph(events, living, docs_root, parse):
     for did, (path, fm) in events["decisions"].items():
         for ref in (fm.get("supersedes") or []):
             add(ref, "decisions", "Superseded by", path)
+        for ref in (fm.get("research") or []):
+            add(ref, "research", "Informed", path)
+    for rid, (path, fm) in events["research"].items():
+        for ref in (fm.get("supersedes") or []):
+            add(ref, "research", "Superseded by", path)
     for kind, (cite_field, cite_dir) in living.items():
         for path, fm in kind_docs(docs_root, kind, parse):
             refs = fm.get(cite_field) or []
@@ -146,6 +151,14 @@ def next_steps(kind, fm, doc_id, path, events, back):
             note = (f"N={n}. Recurrence has earned general language; it may be worth a "
                     "decision or an architecture change.")
 
+    elif kind == "research":
+        if status == "superseded":
+            note = ("Superseded by newer research. Kept unedited -- decisions were made on "
+                    "what it said at the time, and rewriting it would strand their reasoning.")
+        else:
+            note = ("Current. When the world moves, write a new scan that supersedes this "
+                    "one rather than editing it.")
+
     elif kind == "decisions":
         cited = back.get(("decisions", doc_id), [])
         if status == "accepted" and not any(l == "Cited by" for l, _ in cited):
@@ -178,6 +191,9 @@ def render(path, kind, fm, doc_id, events, back, docs_root, is_readme, living_ci
         ref = fm.get(field)
         if ref and ref in events.get(target_kind, {}):
             related.append((label, events[target_kind][ref][0]))
+    for ref in (fm.get("research") or []):
+        if ref in events.get("research", {}):
+            related.append(("Based on", events["research"][ref][0]))
     for ref in (fm.get("supersedes") or []):
         if ref in events.get("decisions", {}):
             related.append(("Supersedes", events["decisions"][ref][0]))

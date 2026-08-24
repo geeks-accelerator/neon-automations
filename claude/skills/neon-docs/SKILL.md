@@ -27,7 +27,7 @@ Nearly everything else follows from which one you are writing.
 
 | | | naming | how it changes |
 |---|---|---|---|
-| **Events** | `decisions` `issues` `proposals` `plans` `observations` | `2026-08-23-slug.md` | **accrete** — status advances, notes append, records are superseded or closed by newer ones |
+| **Events** | `decisions` `issues` `proposals` `plans` `observations` `research` | `2026-08-23-slug.md` | **accrete** — status advances, notes append, records are superseded or closed by newer ones |
 | **Living** | `architecture` `vision` | `repo-topology.md` | **overwritten** — paragraphs that stop being true are deleted |
 
 An event happened on a day, for reasons true at the time, with alternatives that were live
@@ -49,7 +49,7 @@ Living documents cite the events that produced them — `architecture` cites `de
 having: the synthesis stays traceable to the record, so a reader who disagrees with how
 something works can find out why it was chosen without asking anyone.
 
-**The classification is total.** The five event directories are the complete list of where
+**The classification is total.** The six event directories are the complete list of where
 events live. *Everything else in the repo is a living document* — both `README.md`s, every
 directory README, `CLAUDE.md`, this file, and the numbered founding docs at the root of
 `docs/`. None of them carry dates in their filenames, and all of them get rewritten in place.
@@ -68,6 +68,7 @@ reading on its own, it earns a `decisions/` entry rather than a banner in the pr
 | `docs/plans` | an approved proposal needs implementation detail |
 | `docs/issues` | something is broken or behaves unintendedly |
 | `docs/observations` | something surprised you or cost debugging time |
+| `docs/research` | you looked something up externally and the answer shapes a choice |
 | `docs/decisions` | a non-obvious, hard-to-reverse choice is made |
 | `docs/architecture` | describing how the system currently works |
 | `docs/vision` | describing a future state nobody has committed to |
@@ -126,6 +127,25 @@ standing multi-file gate.
 
 Closing an issue without asking *what should this have taught us* is the most common way a
 team pays the same debugging cost twice.
+
+## Research is dated evidence
+
+A scan records **external reality at a moment in time**, so it is an event: prices move,
+competitors pivot, and the value of the record is that it says what was knowable *then*.
+
+Rewriting one in place strands every decision that cited it — a later reader finds reasoning
+resting on numbers that appear nowhere, unable to tell whether the decision was wrong or
+merely overtaken. When the world moves, write a new scan with `supersedes:` and set the old
+one to `superseded`. Both stay.
+
+Every claim carries a source; the validator warns when a `current` scan lists none, because
+research nobody can re-check is an assertion wearing a lab coat. Record the **method** too —
+what was searched, what was excluded, what could not be found. An absence of evidence is a
+finding, and it is the first thing a later reader needs before repeating the work.
+
+A decision may carry `research: [...]`, and those ids must resolve. That edge is why the two
+directories are separate: a choice stays anchored to dated evidence that cannot shift
+underneath it.
 
 ## What earns a decision record
 

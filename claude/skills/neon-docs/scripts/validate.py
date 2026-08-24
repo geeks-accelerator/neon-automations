@@ -8,7 +8,7 @@ runs is a validator nobody runs.
 There are two kinds of document, and nearly everything follows from which one
 you are writing:
 
-  EVENTS happened on a day.  docs/{decisions,issues,proposals,plans,observations}
+  EVENTS happened on a day.  docs/{decisions,issues,proposals,plans,observations,research}
     Dated filenames. The account of what happened is never rewritten -- status
     advances, notes append, records are superseded or closed by newer ones. The
     call that turned out wrong is the most useful thing in the tree later, and
@@ -75,6 +75,11 @@ EVENTS = {
     "observations": {
         "date_field": "first_seen",
         "required": ["id", "title", "n", "first_seen", "last_seen", "evidence"],
+    },
+    "research": {
+        "date_field": "conducted",
+        "required": ["id", "title", "status", "conducted"],
+        "status": ["current", "superseded"],
     },
     "decisions": {
         "date_field": "decided",
@@ -197,7 +202,7 @@ def collect_living(kind, resolvable):
         count += 1
         if DATED_PREFIX_RE.match(name):
             err(path, f"dated filename in {kind}/ -- a dated record is an event and belongs "
-                      f"in docs/{{decisions,issues,proposals,plans,observations}}; "
+                      f"in docs/{{decisions,issues,proposals,plans,observations,research}}; "
                       f"{kind} describes what currently is")
             continue
         if not LIVING_NAME_RE.match(name):
@@ -286,6 +291,19 @@ def cross_check(data):
         for ref in (fm.get("supersedes") or []):
             if ref not in data["decisions"]:
                 err(path, f"supersedes {ref!r}, which does not exist in docs/decisions")
+        # a decision citing research is the edge that keeps a justification
+        # traceable: research is dated and immutable, so the reasoning cannot
+        # shift under the decision after the fact
+        for ref in (fm.get("research") or []):
+            if ref not in data["research"]:
+                err(path, f"cites research {ref!r}, which does not exist in docs/research")
+
+    for path, fm in data["research"].values():
+        for ref in (fm.get("supersedes") or []):
+            if ref not in data["research"]:
+                err(path, f"supersedes {ref!r}, which does not exist in docs/research")
+        if fm.get("status") == "current" and not fm.get("sources"):
+            warn(path, "no sources listed -- research nobody can re-check is an assertion")
 
 
 # Two different roots, and conflating them is the bug this comment exists to
@@ -368,7 +386,7 @@ def check_strays():
             continue
         if DATED_PREFIX_RE.match(name):
             err(path, "dated filename at the docs/ root -- events belong in "
-                      "docs/{decisions,issues,proposals,plans,observations}; "
+                      "docs/{decisions,issues,proposals,plans,observations,research}; "
                       "everything else here is a living document")
 
 
