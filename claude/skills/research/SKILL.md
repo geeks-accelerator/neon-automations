@@ -49,6 +49,31 @@ Every claim links to where it came from. The validator warns when a `current` sc
 Prefer primary where the number matters. Where you use a secondary source citing a study,
 say so rather than presenting it as first-hand.
 
+## Modes
+
+Every scan declares what kind of fact it holds. The mode sets how long that fact stays
+trustworthy — not how long the document stays interesting.
+
+| mode | horizon | covers |
+|---|---|---|
+| `pricing` | 90d | API costs, subscription tiers, unit economics |
+| `landscape` | 180d | competitors, prior art, what already exists |
+| `format` | 180d | content and production conventions, what holds attention |
+| `regulation` | 365d | securities, licensing, terms of service |
+| `metrics` | 7d | numbers from our own systems |
+
+Past its horizon a scan **warns on every validator run and blocks `--preflight`**. Clear it
+by re-running that mode and superseding, or by setting `status: superseded` if it no longer
+bears on anything.
+
+Adding a mode is an edit to `RESEARCH_MODES` in the validator and nothing else — the schema
+check, the staleness sweep, and the preflight gate all read from that table, so a new kind of
+scan becomes checkable without touching any caller.
+
+**Scan one mode at a time.** A record answering a single kind of question can be superseded
+on its own schedule; a scan mixing pricing and landscape expires on the shorter horizon and
+drags fresh findings into a re-run with it.
+
 ## Closing an open question
 
 A record blocked on research carries `needs_research: [slug]`. Close it by listing that slug

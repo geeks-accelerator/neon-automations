@@ -54,6 +54,21 @@ def find_root():
 ROOT = find_root()
 DOCS = os.path.join(ROOT, "docs")
 
+# Research modes. Adding one is an edit to this table and nothing else: the
+# schema check, the staleness sweep, and --preflight all read from here, so a new
+# kind of scan becomes checkable without touching any caller.
+#
+# The horizon is how long that kind of fact stays trustworthy, not how long the
+# document stays interesting. Pricing moves quarterly; regulation moves slowly;
+# our own metrics are stale in a week.
+RESEARCH_MODES = {
+    "pricing":    (90,  "API costs, subscription tiers, unit economics"),
+    "landscape":  (180, "competitors, prior art, what already exists"),
+    "format":     (180, "content and production conventions, what holds attention"),
+    "regulation": (365, "securities, licensing, terms of service"),
+    "metrics":    (7,   "numbers from our own systems"),
+}
+
 EVENTS = {
     "proposals": {
         "date_field": "opened",
@@ -305,6 +320,11 @@ def cross_check(data):
                 err(path, f"supersedes {ref!r}, which does not exist in docs/research")
         if fm.get("status") == "current" and not fm.get("sources"):
             warn(path, "no sources listed -- research nobody can re-check is an assertion")
+        mode = fm.get("mode")
+        if mode and mode not in RESEARCH_MODES:
+            err(path, f"mode {mode!r} not in {sorted(RESEARCH_MODES)}")
+        elif not mode and fm.get("status") == "current":
+            warn(path, "no mode set -- staleness cannot be checked without one")
 
 
 # Two different roots, and conflating them is the bug this comment exists to
@@ -417,6 +437,32 @@ def check_links():
 
 OPEN_STATES = {"draft", "open", "funded", "approved", "building",
                "confirmed", "proposed", "current", None}
+
+
+def stale_research(data):
+    """Current scans past their mode's horizon.
+
+    Detection is deliberately inclusive: every current scan is checked, every
+    time, because the cost of missing a stale input is a decision made on a
+    number that moved, and the cost of checking is reading a date. Acting on
+    what it finds stays explicit -- see the research skill.
+    """
+    today = date.today()
+    out = []
+    for rid, (path, fm) in sorted(data["research"].items()):
+        if fm.get("status") != "current":
+            continue
+        mode = fm.get("mode")
+        if mode not in RESEARCH_MODES:
+            continue
+        horizon = RESEARCH_MODES[mode][0]
+        conducted = fm.get("conducted")
+        if not (isinstance(conducted, str) and ISO_RE.match(conducted)):
+            continue
+        age = (today - date.fromisoformat(conducted)).days
+        if age > horizon:
+            out.append((rid, mode, age, horizon, path))
+    return out
 
 
 def open_questions(data, living):
@@ -577,16 +623,32 @@ def main():
     for kind, rid, slug, path in questions:
         warn(path, f"needs research: {slug!r} -- no current scan answers it")
 
+    stale_scans = stale_research(data)
+    for rid, mode, age, horizon, path in stale_scans:
+        warn(path, f"{mode} research is {age}d old against a {horizon}d horizon")
+
     if args.preflight:
-        if questions:
-            print(f"\n{len(questions)} open research question(s):\n")
-            for kind, rid, slug, path in questions:
-                print(f"  {slug}")
-                print(f"      raised by  docs/{kind}/{rid}")
-            print("\nResolve by writing a scan in docs/research/ whose `answers:` lists "
-                  "the slug,\nor by dropping the need from the record if it stopped mattering.")
+        # Staleness warns on ordinary runs and blocks here. A build that breaks
+        # because a date passed, with nothing changed, is a bad CI signal -- but
+        # committing to a public position on numbers that expired is worse, and
+        # this is the gate that stands in front of doing that.
+        if questions or stale_scans:
+            if questions:
+                print(f"\n{len(questions)} open research question(s):\n")
+                for kind, rid, slug, path in questions:
+                    print(f"  {slug}")
+                    print(f"      raised by  docs/{kind}/{rid}")
+                print("\nResolve by writing a scan whose `answers:` lists the slug, or by "
+                      "dropping\nthe need from the record if it stopped mattering.")
+            if stale_scans:
+                print(f"\n{len(stale_scans)} stale scan(s):\n")
+                for rid, mode, age, horizon, path in stale_scans:
+                    print(f"  {rid}")
+                    print(f"      {mode}: {age} days old, horizon {horizon}")
+                print("\nRe-run each in its mode and supersede, or set status: superseded if "
+                      "it no\nlonger bears on anything.")
             return 1
-        print("\npreflight clean -- no open research questions")
+        print("\npreflight clean -- no open questions, no stale research")
         return 0
 
     stale = [] if errors else check_nav(data, args.fix)

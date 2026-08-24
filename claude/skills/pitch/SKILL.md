@@ -19,12 +19,24 @@ with the ask itemized from real costs.
 python3 .claude/skills/neon-docs/scripts/validate.py --preflight
 ```
 
-**Non-zero exit means stop.** Open questions are things a record has declared would change
-what the pitch says. Shipping past them means committing to a position that twenty minutes
-of searching might have corrected — and a pitch is expensive to retract.
+**Non-zero exit means stop.** It reports two things, and both block:
 
-Resolve them with the [`research`](../research/SKILL.md) skill, or drop the need if it
-stopped mattering. Then re-run.
+- **Open questions** — a record has declared something it cannot answer that would change
+  what the pitch says.
+- **Stale research** — a scan is past its mode's horizon. Pricing expires in 90 days,
+  competitive landscape in 180, our own metrics in 7.
+
+Shipping past either means committing publicly to a position that a short search might have
+corrected, and a pitch is expensive to retract.
+
+Detection is inclusive by design: every open question and every current scan is checked, every
+time, because missing one stale input is a worse failure than an extra check is a cost.
+**Acting on it is not.** Re-run the modes the preflight actually named — a pitch refresh that
+re-scans everything on principle buries the finding that mattered and costs the time of
+everyone reading the result.
+
+Resolve with the [`research`](../research/SKILL.md) skill, or drop a need that stopped
+mattering, or supersede a scan that no longer bears on anything. Then re-run.
 
 ## Step 2 — derive the ask before writing anything
 
