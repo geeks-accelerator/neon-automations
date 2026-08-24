@@ -197,9 +197,8 @@ def collect_events(kind):
 def collect_living(kind, resolvable):
     """Parse one living directory. Frontmatter optional; prose is welcome."""
     cite_field, cite_dir = LIVING[kind]["cites"]
-    count = 0
+    found = {}
     for name, path in entries(kind):
-        count += 1
         if DATED_PREFIX_RE.match(name):
             err(path, f"dated filename in {kind}/ -- a dated record is an event and belongs "
                       f"in docs/{{decisions,issues,proposals,plans,observations,research}}; "
@@ -211,6 +210,7 @@ def collect_living(kind, resolvable):
 
         fm, perr = parse_frontmatter(path)
         if perr:
+            found[name[:-3]] = (path, {})
             continue          # prose without frontmatter is fine here
         for field in ("decided", "status", "opened"):
             if field in fm:
@@ -224,7 +224,8 @@ def collect_living(kind, resolvable):
         for ref in refs:
             if ref not in resolvable:
                 err(path, f"cites {ref!r}, which does not exist in docs/{cite_dir}")
-    return count
+        found[name[:-3]] = (path, fm)
+    return found
 
 
 def generalizes(path):
@@ -376,6 +377,37 @@ def check_links():
                     err(path, f"broken link: {target}")
 
 
+OPEN_STATES = {"draft", "open", "funded", "approved", "building",
+               "confirmed", "proposed", "current", None}
+
+
+def open_questions(data, living):
+    """Questions a record has declared it cannot answer yet.
+
+    A record says `needs_research: [slug]`; a research scan says
+    `answers: [slug]`. Anything unmatched is an open question. Prose cannot be
+    scanned for this -- "we should look into X" is invisible to a tool -- so the
+    marker is what makes the gate mechanical instead of a thing to remember.
+    """
+    answered = set()
+    for _, fm in data["research"].values():
+        if fm.get("status") != "superseded":
+            for slug in (fm.get("answers") or []):
+                answered.add(slug)
+
+    everything = {k: v for k, v in data.items()}
+    everything.update(living)
+    out = []
+    for kind, records in everything.items():
+        for rid, (path, fm) in sorted(records.items()):
+            if fm.get("status") not in OPEN_STATES:
+                continue
+            for slug in (fm.get("needs_research") or []):
+                if slug not in answered:
+                    out.append((kind, rid, slug, path))
+    return out
+
+
 def check_strays():
     """Files directly under docs/ are living documents -- the founding docs and
     the tree's own README. A dated filename there is an event that missed its
@@ -436,6 +468,8 @@ def main():
     ap = argparse.ArgumentParser(description="Validate a docs/ tree.")
     ap.add_argument("--fix", action="store_true",
                     help="regenerate stale navigation blocks in place")
+    ap.add_argument("--preflight", action="store_true",
+                    help="list open research questions and exit non-zero if any remain")
     args = ap.parse_args()
 
     data = {kind: collect_events(kind) for kind in EVENTS}
@@ -454,6 +488,22 @@ def main():
     cross_check(data)
     living = {kind: collect_living(kind, set(data[LIVING[kind]["cites"][1]]))
               for kind in LIVING}
+
+    questions = open_questions(data, living)
+    for kind, rid, slug, path in questions:
+        warn(path, f"needs research: {slug!r} -- no current scan answers it")
+
+    if args.preflight:
+        if questions:
+            print(f"\n{len(questions)} open research question(s):\n")
+            for kind, rid, slug, path in questions:
+                print(f"  {slug}")
+                print(f"      raised by  docs/{kind}/{rid}")
+            print("\nResolve by writing a scan in docs/research/ whose `answers:` lists "
+                  "the slug,\nor by dropping the need from the record if it stopped mattering.")
+            return 1
+        print("\npreflight clean -- no open research questions")
+        return 0
 
     stale = [] if errors else check_nav(data, args.fix)
     if stale and not args.fix:

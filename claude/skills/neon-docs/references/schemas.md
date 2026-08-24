@@ -39,6 +39,11 @@ supersedes: [2026-07-02-manual-backlog]  # optional
 
 **status:** `draft` · `open` · `funded` · `approved` · `building` · `shipped` · `declined` · `dormant`
 
+Any record may carry `needs_research: [slug]` to declare a question it cannot answer yet.
+A research scan clears it with a matching `answers: [slug]`. Unmatched slugs surface as
+warnings on every run and fail `--preflight`. Use short stable slugs, not prose — they have
+to be matchable.
+
 **Never add a tip total.** Tips attach to the `id` in the platform database. A number owned
 by both a database and a markdown file is a reconciliation bug with a fraud surface
 attached; the validator rejects `tips` and `tips_usd` outright.
@@ -118,6 +123,7 @@ title: Human-readable title
 status: current
 conducted: 2026-08-24
 sources: [https://example.com/a, https://example.com/b]
+answers: [distribution-and-audience-floor]   # optional; closes an open question
 supersedes: [2026-05-01-earlier-scan]   # optional
 ---
 ```

@@ -168,6 +168,41 @@ reader the ground was covered and saves them repeating it. It also deserves care
 niche is equally consistent with an opportunity and with the thing not working, and a scan
 should say when it cannot distinguish those rather than implying the flattering reading.
 
+## Open questions, and the preflight gate
+
+A record can declare what it does not yet know:
+
+```yaml
+needs_research: [distribution-and-audience-floor]
+```
+
+A research scan closes it:
+
+```yaml
+answers: [distribution-and-audience-floor]
+```
+
+Anything unmatched is an **open question**, and the validator warns on it every run.
+
+```bash
+python3 .claude/skills/neon-docs/scripts/validate.py --preflight
+```
+
+Lists every open question with the record that raised it, and **exits non-zero if any
+remain**. Run it before producing anything that commits to a position — a pitch, a round's
+ask, a launch. The point is to stop shipping on an assumption that twenty minutes of
+searching would have corrected.
+
+**Why slugs rather than prose.** "We should look into X" written in a paragraph is invisible
+to a tool, which makes the check a thing to remember rather than a thing that happens. A slug
+is greppable, stable, and can be matched against the scan that answers it — so the gate is
+mechanical, and closing a question is an edit to a record rather than a judgement call.
+
+Two honest ways to clear one: write the scan, or **drop the need because it stopped
+mattering**. The second is legitimate and should be used — a question that no longer bears on
+the decision is noise, and carrying it forward makes the gate something people learn to
+override.
+
 ## What earns a decision record
 
 A choice that was not obvious, had a live alternative, and will be expensive to reverse.
