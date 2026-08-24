@@ -26,6 +26,7 @@ An inference, labelled as such.
 ## Related
 
 - **Informed:** [2026-01-01-example-decision](../decisions/2026-01-01-example-decision.md)
+- **Cited by:** [claims](../pitch/claims.md)
 
 ## Next
 

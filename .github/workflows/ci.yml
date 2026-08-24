@@ -32,7 +32,11 @@ jobs:
       - name: Validator passes on the fixture with no warnings
         run: |
           cd tests/fixture
-          out=$(python3 ../../claude/skills/neon-docs/scripts/validate.py)
+          # `shell: bash -e` kills the step at a failing command substitution,
+          # before the echo -- so a broken fixture reported exit 1 with no
+          # diagnostic at all. Capture the status without letting -e fire.
+          out=$(python3 ../../claude/skills/neon-docs/scripts/validate.py 2>&1) || {
+            echo "$out"; echo "::error::validator failed on the fixture"; exit 1; }
           echo "$out"
           echo "$out" | grep -q "clean (0 warning" || { echo "::error::fixture is not warning-free"; exit 1; }
 
