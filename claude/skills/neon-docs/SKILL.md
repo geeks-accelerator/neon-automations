@@ -128,45 +128,19 @@ standing multi-file gate.
 Closing an issue without asking *what should this have taught us* is the most common way a
 team pays the same debugging cost twice.
 
-## Research is dated evidence
+## Research records
 
-A scan records **external reality at a moment in time**, so it is an event: prices move,
-competitors pivot, and the value of the record is that it says what was knowable *then*.
+`docs/research/` holds dated scans of external fact. They are events: a scan says what was
+knowable *then*, so rewriting one strands every decision that cited it. Supersede instead.
 
-Rewriting one in place strands every decision that cited it — a later reader finds reasoning
-resting on numbers that appear nowhere, unable to tell whether the decision was wrong or
-merely overtaken. When the world moves, write a new scan with `supersedes:` and set the old
-one to `superseded`. Both stay.
+A decision may carry `research: [...]`, and those ids must resolve — that edge keeps a choice
+anchored to evidence that cannot shift underneath it. **Research before decision**: facts a
+choice turns on belong in `research/` with the decision citing them, because numbers written
+straight into an argument bury the evidence inside it.
 
-Every claim carries a source; the validator warns when a `current` scan lists none, because
-research nobody can re-check is an assertion wearing a lab coat. Record the **method** too —
-what was searched, what was excluded, what could not be found. An absence of evidence is a
-finding, and it is the first thing a later reader needs before repeating the work.
-
-A decision may carry `research: [...]`, and those ids must resolve. That edge is why the two
-directories are separate: a choice stays anchored to dated evidence that cannot shift
-underneath it.
-
-**Research before decision.** When a choice turns on external facts — pricing, a regulation,
-what a competitor does — put the facts in `research/` first and have the decision cite them.
-Writing the numbers directly into the decision buries evidence inside an argument, and the
-next person cannot tell which parts you looked up from which parts you concluded.
-
-### Separate findings from implications
-
-Two headings, always, and the separation is the point rather than a formatting preference:
-
-- **Findings** — what the sources say. Each claim carries its source. No inference.
-- **Implications** — what you think it means for this project. Label it as inference.
-
-A reader who disagrees with your reasoning can then keep the evidence, and a reader who finds
-a source was wrong knows exactly which conclusions to revisit. Blend them and the whole
-document has to be thrown out when either half fails.
-
-**Record what you could not find.** An absence of evidence is a finding — it tells the next
-reader the ground was covered and saves them repeating it. It also deserves care: an empty
-niche is equally consistent with an opportunity and with the thing not working, and a scan
-should say when it cannot distinguish those rather than implying the flattering reading.
+**How to conduct one** — separating findings from implications, recording method, what an
+absence means — is the [`research`](../research/SKILL.md) skill. This file owns the record
+shape only.
 
 ## Open questions, and the preflight gate
 
