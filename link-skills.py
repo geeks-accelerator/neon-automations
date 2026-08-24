@@ -172,9 +172,15 @@ def verify_pointers():
             continue
         sha, path = parts[0].lstrip("+-U"), parts[1]
         sub = os.path.join(REGISTRY, path)
-        if not os.path.isdir(sub):
-            print(f"  MISSING   {path} — not checked out")
-            bad += 1
+        # `git -C dir` does not fail on a directory that is not a repository --
+        # it walks up and answers about the enclosing one. An uninitialised
+        # submodule is an empty directory inside the parent, so every question
+        # asked here would be silently answered by the parent repo, and a
+        # submodule SHA would never be an ancestor of the parent's main. That
+        # is a wrong answer, not a missing one, so check before asking.
+        top = git(sub, "rev-parse", "--show-toplevel") if os.path.isdir(sub) else None
+        if not os.path.isdir(sub) or top is None or os.path.realpath(top) != os.path.realpath(sub):
+            print(f"  skipped   {path} — not checked out here, cannot verify")
             continue
         # is the pinned commit an ancestor of the remote's main?
         git(sub, "fetch", "-q", "origin", "main")
