@@ -1,11 +1,11 @@
 ---
 name: neon-docs
-description: Maintain the LiveNeon docs/ tree — create proposals, plans, issues, observations, and ADRs with correct IDs, frontmatter, and cross-links, then validate the whole tree. Use this skill whenever work in this repo touches anything under docs/ — opening a proposal, drafting a plan, filing a bug, recording something that surprised you or cost you debugging time, writing an architecture decision, closing an issue, or marking a plan shipped. Also use it before committing any change under docs/, when a docs check is failing, or when asked what a proposal, plan, or observation should look like. Reach for it even when the user does not name the docs tree explicitly — "we should write that down", "file this", "what did we learn" all land here.
+description: Maintain a project's docs/ tree — create and validate research, decisions, proposals, plans, issues, and observations with correct dated ids, frontmatter, cross-links, and generated navigation. Use this skill whenever work touches anything under docs/: looking something up externally and writing down what you found, recording a decision and why, opening a proposal, drafting a plan, filing a bug, capturing something that surprised you or cost you debugging time, closing an issue, or marking a plan shipped. Also use it before committing any change under docs/, when a docs check is failing, or when asked what any of these records should look like. Reach for it even when the docs tree is not named — "we should write that down", "file this", "what did we learn", "look into X and write it up" all land here.
 ---
 
 # neon-docs
 
-Maintains `docs/` for a LiveNeon project. The structure is not filing for its own sake — it
+Maintains `docs/` for any project in the registry, and for the registry itself. The structure is not filing for its own sake — it
 is what makes the work legible enough to review, attest, and fund. A plan you cannot cite is
 a plan you cannot prove shipped, and proposals are read by the platform as data, so drift
 breaks a running system rather than merely annoying a reader.
@@ -146,6 +146,27 @@ finding, and it is the first thing a later reader needs before repeating the wor
 A decision may carry `research: [...]`, and those ids must resolve. That edge is why the two
 directories are separate: a choice stays anchored to dated evidence that cannot shift
 underneath it.
+
+**Research before decision.** When a choice turns on external facts — pricing, a regulation,
+what a competitor does — put the facts in `research/` first and have the decision cite them.
+Writing the numbers directly into the decision buries evidence inside an argument, and the
+next person cannot tell which parts you looked up from which parts you concluded.
+
+### Separate findings from implications
+
+Two headings, always, and the separation is the point rather than a formatting preference:
+
+- **Findings** — what the sources say. Each claim carries its source. No inference.
+- **Implications** — what you think it means for this project. Label it as inference.
+
+A reader who disagrees with your reasoning can then keep the evidence, and a reader who finds
+a source was wrong knows exactly which conclusions to revisit. Blend them and the whole
+document has to be thrown out when either half fails.
+
+**Record what you could not find.** An absence of evidence is a finding — it tells the next
+reader the ground was covered and saves them repeating it. It also deserves care: an empty
+niche is equally consistent with an opportunity and with the thing not working, and a scan
+should say when it cannot distinguish those rather than implying the flattering reading.
 
 ## What earns a decision record
 
