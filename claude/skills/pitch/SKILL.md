@@ -717,6 +717,26 @@ free of all three, which is what lets CI check the parsers on a bare runner.
   video is watched on mute and completion runs far higher with subtitles. This is the
   best-evidenced decision in the whole procedure.
 
+## Step 6b — publish, if the project is private
+
+`publish.py` generates a static site from `docs/pitch/` and the round record: the video, the
+itemized ask, the frozen threshold, and the full claims ledger.
+
+```bash
+python3 .claude/skills/pitch/scripts/publish.py <project> --out <publishing-repo>
+```
+
+**The publishing surface is a target, not a source.** It is generated; editing it is drift. It
+extracts *data* — claim rows, ask lines, the threshold — rather than converting markdown,
+because the private tree holds the workshop and a converter would publish whatever happened to
+be in a file.
+
+**And it states what cannot be checked.** A published ledger whose citations point into a
+private repository asks the reader to take your word for it. The tags are honest about what kind
+of evidence stands behind a claim; whether a reader can reach it is a **separate fact**, and
+publishing the first without the second claims a verifiability that is not being offered. The
+generated page says so above the ledger, not in a footnote.
+
 ## Step 7 — post, and open the next turn
 
 **Take the measurable sample from a direct ask.** Thirty to fifty people reachable personally
