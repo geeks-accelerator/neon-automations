@@ -12,7 +12,9 @@ Things that surprised us or cost debugging time, so the next agent does not repe
 
 ## Contents
 
-*Empty — nothing filed here yet.*
+| date | record | n |
+|---|---|---|
+| 2026-01-02 | [marker-in-frontmatter](2026-01-02-marker-in-frontmatter.md) | 1 |
 
 Conventions, schema, and the validator: [neon-docs](https://github.com/geeks-accelerator/neon-automations/blob/main/claude/skills/neon-docs/SKILL.md).
 

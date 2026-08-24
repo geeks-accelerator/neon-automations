@@ -199,6 +199,59 @@ jobs:
           V --since HEAD~1 >/dev/null 2>&1 || { echo "::error::draft-stage threshold tune rejected"; exit 1; }
           echo "draft threshold tune allowed"
 
+      # A marker named in frontmatter must not be treated as a block opener.
+      # The fixture carries the case; this asserts the body survives, because
+      # "clean" alone would pass on a file whose content had been eaten.
+      - name: Frontmatter naming a nav marker survives regeneration
+        run: |
+          cd tests/fixture
+          python3 ../../claude/skills/neon-docs/scripts/validate.py --fix >/dev/null
+          grep -q "This body is the regression" docs/observations/2026-01-02-marker-in-frontmatter.md \
+            || { echo "::error::nav regeneration destroyed a body via a frontmatter marker"; exit 1; }
+          grep -q 'evidence: "A quoted YAML value' docs/observations/2026-01-02-marker-in-frontmatter.md \
+            || { echo "::error::frontmatter was consumed"; exit 1; }
+          echo "frontmatter marker case holds"
+
+      # render.py's --dry-run path must stay runnable with no API key, no
+      # ffmpeg, and no network -- it is the counter the published script length
+      # comes from, and a counter nobody can run is a counter nobody runs.
+      - name: Pitch renderer parses, and --dry-run needs no credentials
+        run: |
+          cat > /tmp/script.md <<'MD'
+          ---
+          title: Example
+          ---
+
+          # Example
+
+          <!-- nav:parent -->
+          **Parent:** [pitch](README.md)
+          <!-- /nav:parent -->
+
+          Claims used: `C-001`
+
+          ## Hook — 0–8s
+
+          One two three four five.
+
+          ## Ask — final 10–15s
+
+          Six seven eight.
+
+          <!-- nav -->
+          ## Next
+          Swallowed nav content that must never be narrated.
+          <!-- /nav -->
+          MD
+          sed -i 's/^          //' /tmp/script.md
+          out=$(env -u ELEVENLABS_API_KEY python3 claude/skills/pitch/scripts/render.py /tmp/script.md --dry-run) || {
+            echo "$out"; echo "::error::--dry-run failed"; exit 1; }
+          echo "$out"
+          echo "$out" | grep -q "TOTAL  *8 " || { echo "::error::expected 8 spoken words, got other"; exit 1; }
+          echo "$out" | grep -qi "swallowed" && { echo "::error::nav content reached the transcript"; exit 1; }
+          echo "$out" | grep -q "Claims used" && { echo "::error::metadata reached the transcript"; exit 1; }
+          echo "dry-run parser correct: nav and metadata excluded"
+
       # The mode table is duplicated into the skill docs, which is a drift
       # surface of exactly the class the shared-block check exists for. The
       # validator is authoritative; the docs must mention every mode it defines.

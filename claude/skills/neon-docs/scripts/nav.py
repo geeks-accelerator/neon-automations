@@ -438,9 +438,43 @@ def _mask_code_spans(text):
     return CODE_SPAN_RE.sub(lambda m: " " * len(m.group(0)), text)
 
 
+FRONTMATTER_RE = re.compile(r"\A---\n.*?\n---\n", re.S)
+
+
+class _Shifted:
+    """A match whose offsets are relative to the whole document."""
+    __slots__ = ("_m", "_off")
+
+    def __init__(self, m, off):
+        self._m, self._off = m, off
+
+    def start(self, *a):
+        return self._m.start(*a) + self._off
+
+    def end(self, *a):
+        return self._m.end(*a) + self._off
+
+    def group(self, *a):
+        return self._m.group(*a)
+
+
 def _find_block(text, pattern):
-    """Locate a generated block, ignoring any mention inside a code span."""
-    return pattern.search(_mask_code_spans(text))
+    """Locate a generated block in the BODY, ignoring code spans.
+
+    Frontmatter is data and is never a nav target. Code-span masking protects
+    prose that names a marker in backticks; it does nothing inside a quoted YAML
+    string, where backticks are not how you quote. An `evidence:` field citing a
+    nav marker matched as an opener, and the replacement ate the rest of the
+    frontmatter and the entire body -- third sighting of markers eating the
+    documents that describe them, and the first to destroy a file outright
+    rather than truncate one.
+    """
+    m = FRONTMATTER_RE.match(text)
+    off = m.end() if m else 0
+    found = pattern.search(_mask_code_spans(text[off:]))
+    if not found or off == 0:
+        return found
+    return _Shifted(found, off)
 
 
 def apply(path, parent, nav, fix):

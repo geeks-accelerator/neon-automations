@@ -1,3 +1,10 @@
 .DS_Store
 __pycache__/
 *.py[cod]
+
+# Secrets. Never committed -- .env.local carries live API keys (ElevenLabs,
+# Replicate, Leonardo) and this repo is public. The example file is committed
+# and holds variable NAMES ONLY, never values.
+.env
+.env.*
+!.env.example

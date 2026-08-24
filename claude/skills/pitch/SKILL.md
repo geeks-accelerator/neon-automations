@@ -7,10 +7,20 @@ description: Produce a round's pitch — the claims ledger, the script, the item
 
 Two modes over one claims ledger.
 
-| | produces | when |
+| | **full** | **turn** |
 |---|---|---|
-| **full** | `docs/pitch/` — the ledger and the narrative derived from it | init, and when a trigger fires |
-| **turn** | `docs/rounds/2026-08-24-turn-N.md` — script, ask, threshold, result | every other turn |
+| produces | `docs/pitch/` — the ledger, and a **~10-minute narrated pitch** | `docs/rounds/2026-08-24-turn-N.md` — script, ask, threshold, result, and a **<2-minute video** |
+| when | init, and when a trigger fires | every other turn |
+| reader | evaluating the whole project — investor, client, partner, contributor | a stranger deciding whether to tip |
+| order | problem → solution → market → traction → business model → team → ask | hook → problem → solution → ask |
+| why that order | researched for partners running diligence, and this is that audience | researched for strangers deciding in seconds, and this is that audience |
+| narration | ElevenLabs TTS | ElevenLabs TTS |
+
+**The two orders are both correct, for different readers.** An earlier version of this project
+applied the investor order to a ninety-second crowd pitch and filed a high-severity issue about
+it. The fix was not "the investor research was wrong" — it studies partners running diligence,
+accurately. The fix is that **the order is a function of the audience**, and the two modes have
+different ones. Neither order may be used in the other mode.
 
 Design and reasoning: [two pitch modes over one claims ledger](https://github.com/geeks-accelerator/code-neon/blob/main/docs/proposals/2026-08-24-pitch-modes-full-and-turn.md).
 
@@ -149,6 +159,16 @@ full — riskiest assumption `strangers-will-tip` was answered at T=4
    consecutive rebuilds find nothing.
 5. **Pivot** — the code and the docs disagree about *the problem*. Only about the problem;
    disagreements about stack or status are ordinary scan findings.
+6. **The procedure changed the artifact.** When a revision to this skill changes *what full
+   mode produces* — its length, order, audience, or output shape — the standing pitch was built
+   to a procedure that no longer exists, and no amount of ledger freshness fixes that.
+
+**Trigger 6 was found by needing it.** The re-run that introduced the ~10-minute investor-order
+script fired none of triggers 1–5: the tree existed, no assumption had resolved, nothing had
+been demoted, no turns had elapsed, and the docs and code did not disagree. Mode derivation
+would have said *"turn — no trigger fired"* while the correct answer was plainly a full
+rebuild. A trigger list that omits *"the method changed"* silently pins every project to the
+procedure in force the day it was first run.
 
 ## Step 1 in both modes — preflight, and stop if it fails
 
@@ -233,6 +253,19 @@ and the finished outputs are the evidence.
 not always one, and the axis is sometimes scope rather than entity: product, ecosystem, or
 company. Decide explicitly and put it in the index.
 
+## The scope note that was left orphaned
+
+A `format` scan in this project carries a **scope note** saying its deck-structure findings
+describe investor decks and were misapplied to a crowd pitch. That note was correct and the
+correction was **half-finished**: the turn path was fixed and the investor findings were left
+behind the note with **no consumer at all** — accurate research, still in the tree, feeding
+nothing.
+
+Full mode is that consumer. When a scan gets scope-noted rather than superseded, the note is a
+statement that it was applied to the wrong audience — so the question to ask next is *which
+audience is it right for, and does anything here serve them?* A scope note with no answer to
+that is a scan quietly retired without being marked retired.
+
 ## Phases 3–5 — research, by citation
 
 **These get no files here.** Who else has this problem, who the reader is, and what they use
@@ -260,6 +293,10 @@ out of position.
 3. **Read it to real people who match the reader.** Five is enough to be informative.
 4. Apply **Pivot, Persevere, or Pause**, and record which, with the reactions that decided it,
    in `docs/pitch/reactions.md`.
+
+Before anyone hears it, **write into `reactions.md` which reactions would change the pitch
+rather than polish it** — pre-register the listening the way the threshold pre-registers the
+measurement, or every reaction will be read as wording feedback.
 
 **Our own validation does not satisfy this.** A founder scoring their own assumptions is the
 author interviewing themselves with a form in between. Steps 3 and 4 cannot be faked.
@@ -308,9 +345,27 @@ in the ledger, not billed to backers.
 
 ## Phases 10–12 — derived
 
-10. **Narrative at three lengths. Write the script first**, then the one-liner, then the long
-    form. The listed order invites compressing the long form, which inverts the ledger check:
-    the script is what the reader meets.
+10. **Narrative at three lengths.** In full mode the **long form is the script** — a
+    ~10-minute narrated pitch in the investor order:
+
+    | segment | carries |
+    |---|---|
+    | **Problem** | the mechanism the reader is in, never a named rival |
+    | **Solution** | shown, benefits paired to features |
+    | **Market** | who else has this problem — cites a scan, not a market-size fantasy |
+    | **Traction** | what the repository demonstrates. **Often empty, and said plainly** |
+    | **Business model** | how it sustains, or that it does not yet |
+    | **Team** | the highest-attention slide in funded decks, per the format research |
+    | **Ask** | itemized, with what the money buys |
+
+    A `traction` segment with nothing in it is not a reason to skip the segment — it is the
+    most informative thing on the slide, and skipping it reads as concealment to exactly the
+    reader who checks.
+
+    **Write the ~2-minute version too**, and write it first. It is the Phase 3.5 read-aloud —
+    nobody workshops ten minutes with five people — and it is the seed every later turn script
+    is cut from. Then the one-liner. Drafting the long form first invites compressing it, which
+    inverts the ledger check.
 
     Two contradictions, both resolved here. The ledger is load-bearing yet the script comes
     first, so: draft the claims *mentally*, write the script, write `claims.md` formally, then
@@ -321,13 +376,48 @@ in the ledger, not billed to backers.
     assumptions, to be falsified; Phase 10 wants something that makes a reader want in. Write
     for the second, *aim* it at the first: end on the question you most need answered.
 
-11. **Materials — deliberately no file.** A deck is a re-cut of the narrative, and producing one
-    before a human has heard the script is polishing something nobody reacted to. **Production
-    is Part 4, and it runs after Phase 3.5.**
+    **Render the narration here too** — the gauge render is not a turn-mode step, it is how any
+    script gets its length measured and heard (Step 4b). Full mode needs it *more*, because
+    Phase 3.5 is mandatory and reading a script aloud to five people without having heard it
+    once wastes the only sample that can falsify the pitch.
 
-12. **Assembly**: the index, the two numbers, the staleness report. **The index must lead with
-    what a reader would be *for*.** It is what gets opened first and it drifts into an audit
-    summary faster than the long form does.
+    **Full mode carries its own cost line, and it is not the turn's.** Narration bills about a
+    credit per character, and roughly a thousand characters is a minute of speech:
+
+    | | ~2-min turn script | ~10-min full script |
+    |---|---|---|
+    | characters | ~1,300 | **~10,000** |
+    | credits per render | ~1,300 | **~10,000** |
+    | renders in a 30,000-credit Starter month | ~23 | **3** |
+    | renders in a 100,000-credit Creator month | ~76 | **10** |
+
+    **A ~10-minute pitch does not fit Starter.** Three renders is one draft plus two
+    revisions, before any music. Creator is the floor for full mode, and even there ten renders
+    a month disappear quickly once a rebuild trigger fires. So: gauge long-form **section by
+    section** rather than whole, and re-render only the section that changed. Publish the
+    full-mode cost separately from the round's — a reader comparing them should see that the
+    standing pitch and the turn are different purchases.
+
+11. **Production — and it runs *after* Phase 3.5, never before.** Full mode does produce a
+    narrated artifact, but the ordering principle is unchanged and is the whole reason this
+    phase has a number: **producing before a human has heard the script is polishing something
+    nobody reacted to.** Three source runs nearly built a deck anyway.
+
+    Slides, narration, captions and assembly follow [Step 6](#step-6--produce), which both
+    modes share. At ten minutes expect ~30–40 slides rather than the 10–15 a self-paced deck
+    carries — a ten-minute narration over fifteen stills leaves each one on screen for forty
+    seconds, which is longer than an image holds attention.
+
+12. **Assembly**: the index, the two numbers, the staleness report — then an **arithmetic
+    pass** over the whole tree: re-sum every stated total against its own itemization, re-count
+    every enumerated tally against its own list, and re-derive every number that appears in
+    more than one file, once, at the end. The first run shipped "six of eight" over a list of
+    five and a "thirty dollar" ask over an itemization summing to 31 — in a pitch whose premise
+    is that the cost is a receipt. And expect the fixed point to fire: adding the row that
+    records a numeric disagreement changes the ratio the index reports.
+
+    **The index must lead with what a reader would be *for*.** It is what gets opened first and
+    it drifts into an audit summary faster than the long form does.
 
 ## `what-exists-now.md` — five buckets, in this order
 
@@ -362,6 +452,11 @@ number hides that the ground shifted, which is the thing a maintainer needs to k
 On a first run nothing can be demoted, so the report is an *already expected to drift* table
 naming which claims will move and why.
 
+**The pitch mutates the tree it describes.** Committing `docs/pitch/` changes the tracked-file
+count, the commit count, and "nothing uncommitted" — so tree-shape claims are true at the
+scanned SHA and at no commit after. Pin them to the SHA and list them in the first-run
+staleness report as breaking on the pitch's own first commit.
+
 ---
 
 # Part 4: turn
@@ -394,10 +489,30 @@ being in a hurry.
 
 Itemize from real prices, publish the itemization, and carry over the Phase 6–7 rules above.
 
+**Budget gauge renders separately from ship takes.** They scale with **drafts, not takes** —
+the first run's script went through three drafts before it was cut to length, and under this
+procedure each of those renders. An ask that budgets "three takes" and then iterates five times
+is under-itemized against its own process. Two lines, both published:
+
+| line | scales with |
+|---|---|
+| gauge renders | number of script drafts |
+| ship take | one, plus retries on delivery |
+
 ## Step 4 — script first, everything else second
 
-At ~150 words per minute, 90 seconds is **~225 words**. Write and cut the script before
-generating anything. Cutting a script is free; cutting finished slides is not.
+At ~150 words per minute, 90 seconds is **~225 words** — a drafting target, not a
+measurement. **The measurement is the rendered audio's duration** (Step 4b), and it is the
+number that gets published.
+
+Word count is a two-step estimate — count the words, assume a rate — and on the first run both
+steps failed: the script was published as "~228 words" when it measured 273, and the corrected
+instrument then reported 284 because it silently swallowed a generated `<!-- nav -->` block.
+The assumed 150 wpm was never checked against a voice at all. **A rendered file has a duration;
+it cannot be miscounted, and it settles the rate question by not asking it.**
+
+Write and cut the script before generating slides. Cutting a script is free; cutting finished
+slides is not.
 
 ### Four parts, not seven slides
 
@@ -408,12 +523,13 @@ generating anything. Cutting a script is free; cutting finished slides is not.
 | **Solution** — show it; benefits paired to features | 30–90s |
 | **Ask** — what the money buys, itemized | final 10–15s |
 
-**This is not the investor order.** Problem → solution → market → traction → business model →
-team → ask is researched for partners running diligence over two minutes. A round's audience is
-strangers deciding in ninety seconds, and that order spends slides on market size (irrelevant to
-someone giving $10) and on traction and financials, which an early project does not have.
-Crowdfunding videos run 60–180 seconds; the most-cited failure is overcomplicating, so viewers
-leave before the ask.
+**This is not the investor order, and that order is not wrong — it is full mode's.** Problem →
+solution → market → traction → business model → team → ask is researched for partners running
+diligence over two minutes, and full mode uses it for exactly that reader. A round's audience is
+strangers deciding in ninety seconds, where the same order spends slides on market size
+(irrelevant to someone giving $10) and on traction and financials an early project does not
+have. Crowdfunding videos run 60–180 seconds; the most-cited failure is overcomplicating, so
+viewers leave before the ask.
 
 ### Sell participation, not features
 
@@ -425,10 +541,69 @@ The trap is drifting toward *virtual product* framing — access, credits, downl
 effective category and the first thing most people reach for. What a round sells is naming what
 gets built, watching it happen, and holding a claim on the ledger.
 
+### Step 4b — render the audio, and listen to it
+
+**Every pitch renders narration by default, in both modes.** ElevenLabs, straight from the
+script, before any slide exists. This is a **gauge, not necessarily the ship take**, and the
+two jobs are different — conflating them is what kept TTS filed as a later A/B experiment when
+it was always the cheapest rehearsal available.
+
+What the render is for:
+
+- **The real duration.** Replaces the assumed rate with a measured fact. Publish this number.
+- **Hearing what silent reading hides** — sentences too long for one breath, tongue-twisters,
+  and figures that are hard to *hear*. "Thirty-one dollars" and "$31" read identically and
+  land differently.
+- **Rehearsal before Phase 3.5.** Reading a script to five people without having heard it once
+  is a wasted sample; the render is the cheapest possible dry run.
+
+```bash
+# free: parse, count, and estimate. No API key, no ffmpeg, no cost.
+python3 .claude/skills/pitch/scripts/render.py docs/pitch/two-minute.md --dry-run
+
+# render: caches each segment by content hash, concatenates, and probes duration
+python3 .claude/skills/pitch/scripts/render.py docs/pitch/long-form.md --voice <id>
+```
+
+A **spoken segment is a heading carrying a timing** — `## Hook — 0–8s`,
+`## Problem — 0:00–1:30`. Headings without one are not narrated, which is what keeps metadata,
+"Alternates considered", and generated navigation out of the audio.
+
+**`--dry-run` and a real render share one parser, deliberately.** This script's length was
+published wrong three times from three different ad-hoc counters: `~228` when it was 273, then
+284 when a generated `<!-- nav -->` block was swallowed, then 244 because a `split("## Hook")`
+left `— 0–8s` in the body where the heading-strip could not match it. **A number derived by a
+different code path than the one that consumes it will drift, and every drift reads as a fact.**
+The counter is now the renderer.
+
+Re-render on every draft — the cache means only a changed segment costs credits, which is what
+makes iterating on a ten-minute script affordable at all.
+
+**TTS ships, in both modes.** Replacing the audio track with a human recording is **out of
+scope for now** and is a reasonable future feature; nothing in the procedure prevents it, and
+the script and slide timings do not change if it happens.
+
+At ten minutes this is not really a choice — a human take that must be re-recorded on every
+rebuild is not a repeatable artifact, and TTS is what makes a long-form pitch cheap enough to
+regenerate when a claim gets demoted.
+
+**One measurement caveat, recorded rather than resolved.** The turn threshold measures whether
+the artifact holds attention, and a synthetic voice is a variable inside it. If turns fail at
+the low end, "the voice" and "the concept" are not separable from the number alone — so a null
+result reads as *this artifact did not hold attention*, never as *the idea is wrong*. The clean
+A/B is a human take against the TTS one, one variable at a time, whenever the human-voice
+feature lands.
+
 ### Back-check against the ledger
 
 Every claim the script makes appears in `claims.md`. Move anything that does not survive.
 List the claim ids in the round record.
+
+**Do it sentence by sentence, in both directions, with the ledger open** — write each spoken
+sentence next to the row it needs, then read the claim list against the table. A final glance
+is not this check: the first run's list was wrong in both directions at once (three ids the
+script never says, three sayings with no id, one claim with no row), and the mechanical half
+of gate 6 passed cleanly the whole time.
 
 ## Step 5 — the threshold, written before posting
 
@@ -466,16 +641,29 @@ the full gate.
 
 ## Step 6 — produce
 
-- **Narration.** A real human voice beats TTS for a first pitch: it removes the low-effort-AI
-  association, and it removes a confound — a null result should be attributable to the concept,
-  not the voice. A/B TTS in a later turn, one variable at a time.
+- **Narration.** The gauge render already exists from Step 4b. For the **ship** take at T=1,
+  a real human voice: it removes the low-effort-AI association and removes a confound, since a
+  null result should be attributable to the concept rather than the voice. A/B the TTS take
+  from T=2, one variable at a time.
 - **Put a face on it.** Trust is best built face-to-face, and the segment should read **calm,
   honest, grounded** — no shouting, no overacting. Cheapest version: a face for the founder
   segment, stills for the rest.
 - **Theme.** Generate the music bed **once** and reuse it every round. A recurring show needs a
   recurring theme; regenerating it throws away the sonic identity that makes a later episode
   recognisably the same series.
-- **Slides.** Expect ~2 attempts per keeper.
+- **Slides.** Generated on **Replicate** or **Leonardo**, ~2 attempts per keeper.
+
+  **Prefer a provider that can be priced per unit, and say why when you do not.** FLUX via
+  Replicate/OpenRouter is quotable per image; Leonardo bills GPU-load tokens against a
+  subscription with **no published per-model table**, so its honest ask line is *"$X/mo, of
+  which this round used an unmeasurable fraction"* — a floor, not a receipt. A pitch whose
+  differentiator is that the ask is itemized should notice when a tooling choice quietly
+  removes that.
+
+  This is the general shape, not a verdict on one vendor: **a subscription-priced input cannot
+  appear as a per-round line.** Disclose it separately as a fixed monthly cost, the way an
+  apportioned domain share is disclosed, and never divide it into an invented per-image
+  figure.
 - **Captions throughout**, sans-serif, high contrast, short phrases synced to speech. ~85% of
   video is watched on mute and completion runs far higher with subtitles. This is the
   best-evidenced decision in the whole procedure.
@@ -514,8 +702,9 @@ docs/pitch/                       living, optional, rebuilt by full
 ├── scan.md                       Phase 0 + the affirmative sweep
 ├── claims.md                     the ledger — load-bearing
 ├── one-liner.md
-├── two-minute.md                 the script; doubles as the Phase 3.5 read-aloud
-├── long-form.md
+├── two-minute.md                 the ~2-min script: Phase 3.5 read-aloud, and the seed
+│                                 every turn script is cut from
+├── long-form.md                  the ~10-min full-mode script, investor order, narrated
 ├── what-exists-now.md            the five buckets
 ├── the-ask.md
 ├── riskiest-assumptions.md
@@ -526,7 +715,9 @@ docs/rounds/2026-08-24-turn-N.md  event, optional, one per turn
 
 † The top of `README.md` is the generated directory index (`--fix` maintains it); the two
 numbers and the staleness report are hand-written **below** the generated block, which the
-generator preserves.
+generator preserves. **Start the file with the empty marker pair** (`<!-- index:begin -->`
+`<!-- index:end -->`): a README with no markers is wholly replaced by the next `--fix` — silent
+data loss, filed as an open registry issue the first run found by hitting it in a fixture copy.
 
 **Flat, unlike the source method**, which nests under `evidence/`, `narrative/`, `offer/`,
 `risk/`, `validation/`. Our validator and navigation generator walk one level, and the filenames
@@ -606,9 +797,35 @@ all seven and are worth more than any single finding: the ratio consistently mis
 riskiest-three number does not; the pull is toward prosecution, not persuasion; and after the
 arithmetic rules existed, the errors moved from memory into instruments.
 
-**The production half**: **N=0.** No script has been written, no video produced, nothing posted,
-nothing measured. Every timing, threshold, and channel rule is research applied to a situation
-it was not gathered in.
+**The extraction half here: N=1.** Full mode ran once, and broke four things the prose had not
+anticipated — which is the source method's own pattern continuing:
+
+| run | target | what it broke |
+|---|---|---|
+| 1 | live-neon, 2026-08-24 | **The gate-6 judgement half, both directions at once** — the script's claim list named three ids the script never says and missed four it needs, while the mechanical half passed clean. A word count stated as a measurement was a target (claimed 228, measured 273), and the fixed instrument later broke again by absorbing generated nav. Assembly shipped two arithmetic defects ("six of eight" over a list of five; a $30 ask over an itemization summing to 31). Found and left in place: a silent data-loss defect in the shared tooling, and a docs-vs-world mismatch (the named domain serves a different product) |
+
+**Revised after run 1**, on the founder's call: the two modes now produce different artifacts
+for different readers rather than the same artifact at different freshness — a ~10-minute
+narrated pitch in the investor order for someone evaluating the project, and a <2-minute video
+in the four-part order for the crowd. Narration is TTS in both. That split is **unrun**: every
+step below describing full-mode production is N=0 again.
+
+**Run 2 — live-neon, 2026-08-24, the first re-run.** Broke three more things: the trigger list
+had no entry for *the procedure changed* (added as trigger 6, having been found by needing it);
+the gate-6 back-check **failed a second time**, exactly as its observation predicted from the
+ordering, naming one claim the script never made and missing eight it did; and the
+self-referential *"this ledger holds N claims"* row falsified itself on being written — the
+documented fixed point, converged by editing in place rather than adding a row. The maintenance
+pass demoted one claim (`C-015`) whose count had moved, re-extracted loudly rather than quietly.
+
+What held: the extraction premise (a documents-only repo produced a 27-claim ledger, 74%
+extracted), the prosecution guard (the index leads with what a reader would be for; bucket 2
+carried the best material), and the two-numbers gap exactly as the source predicted — 74%
+extracted beside riskiest-three of 0.5.
+
+**The production half**: **N=0.** A script now exists (244 measured words); no video has been
+produced, nothing posted, nothing measured. Every timing, threshold, and channel rule is
+research applied to a situation it was not gathered in.
 
 **The fork does not receive upstream revisions.** The next run there will break something in it,
 on the evidence of the previous seven, and we will not hear. Re-read and diff against the
@@ -619,15 +836,22 @@ recorded commit deliberately or not at all.
 - **The two modes collapse.** If every turn triggers a full rebuild, the split is imaginary.
 - **The invariant does not hold.** If turn pitches routinely append claims a full rebuild would
   tag differently, the shared ledger is laundering rather than constraining.
-- **The extraction premise.** If a full run finds most of what a pitch needs is not in the
-  repository, this is an ordinary pitch skill in an evidence costume — and *that result is worth
-  more than the pitch*.
+- **The extraction premise. Held at N=1** — a repository with zero code files still yielded a
+  27-row ledger at 74% extracted, because the documents themselves are artifacts. The hook
+  stands for repositories with less self-description than this one.
 - **The honesty-is-reach claim.** If overclaiming pitches outperform with micro-funders, the
   central argument is wrong.
 - **The tri-role reader.** If real readers split into funders-who-do-not-use and
   users-who-do-not-fund, the collapsed persona is a fiction.
 - **The prosecution guard.** If a run still produces an audit with a warm closing sentence, the
   guard has to become a gate.
+- **The ~10-minute full-mode length.** Decided deliberately, and **against every length finding
+  in this tree**: investor first-pass review averages 2 min 14 s, crowdfunding videos lose most
+  viewers past 5 minutes, explainers drop sharply past 2. None of those studied a *warm* reader
+  who agreed to watch, which is full mode's audience — so the finding may simply not apply, and
+  it may. **Nothing here evidences ten minutes.** The falsifier is the first full pitch's
+  completion curve: if warm viewers drop at the same place cold ones do, the format is wrong and
+  the reader-paced deck is the alternative that was set aside to get here.
 - **The six-turn backstop.** A guess with no evidence behind it.
 - **The threshold numbers.** 30 starts, 40%, 15% — derived from a binomial interval, never
   observed here.
