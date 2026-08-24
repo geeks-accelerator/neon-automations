@@ -45,6 +45,13 @@ mattering, or supersede a scan that no longer bears on anything. Then re-run.
 Itemize from real prices, and **publish the itemization**. The number is small and that is
 the interesting part; nobody in this category shows what a round actually costs.
 
+**A small ask helps.** High funding goals correlate with failure, and a detailed breakdown of
+how funds will be allocated is a documented trust signal — which matters most for a project
+with no traction or revenue to show. Two others come free with this design: a round ladder is
+*"realistic goals broken into achievable milestones"*, and a public build log is
+*"transparency about intentions, challenges, and progress."* Resist the urge to apologise for
+a small number.
+
 Contributed capacity — agent compute, human hours — never enters a cash ask. It is recorded
 in the ledger, not billed to backers.
 
@@ -53,13 +60,38 @@ in the ledger, not billed to backers.
 At ~150 words per minute, 90 seconds is **~225 words**. Write and cut the script before
 generating anything. Cutting a script is free; cutting finished slides is not.
 
-**The hook goes in the first 15 seconds.** A deck is scanned by someone who chose to open it;
-a video competes for someone who did not, and about a third of viewers leave inside 30
-seconds. The conventional problem → solution → market → traction → team → ask order buries
-the hook, and can only follow it.
+### Four parts, not seven slides
 
-**Put who-you-are early.** The team slide draws more attention than any other in funded
-decks, and a human carries the story in a way a mechanism does not.
+| segment | timing |
+|---|---|
+| **Hook** — the problem, arrestingly | 0–8s |
+| **Problem** — why it is worth caring about | 8–30s |
+| **Solution** — show it; benefits paired to features | 30–90s |
+| **Ask** — what the money buys, itemized | final 10–15s |
+
+**This is not the investor order.** Problem → solution → market → traction → business model →
+team → ask is researched for partners running diligence over two minutes. A round's audience
+is strangers deciding in ninety seconds, and that order spends slides on market size
+(irrelevant to someone giving $10) and on traction and financials, which an early project
+does not have. Crowdfunding videos run 60–180 seconds; the most-cited failure is
+overcomplicating, so viewers leave before the ask.
+
+### Sell participation, not features
+
+Reward-based backers are primarily driven by **purpose and identification with the mission**;
+the reward is secondary. And **participation ranks as the most effective reward category** —
+above a physical product, far above a virtual one.
+
+So the trap is drifting toward *virtual product* framing — access, credits, downloads — which
+is the least effective category and the first thing most people reach for. What a round
+actually sells is naming what gets built, watching it happen, and holding a claim on the
+ledger.
+
+### Put a face on it
+
+The founder should appear on camera. Trust is described as best built face-to-face, and the
+segment should read **calm, honest, grounded** — no shouting, no overacting. The cheapest
+version is a face for the founder segment and stills for the rest.
 
 ## Step 4 — produce
 
