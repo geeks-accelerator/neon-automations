@@ -39,14 +39,31 @@ def projects():
             yield name
 
 
+def source_for(project):
+    """Prefer a project's own automations submodule over the registry's.
+
+    A project carrying its own submodule pins the tooling at a SHA it controls
+    and keeps its symlinks inside its own tree, so a standalone recursive clone
+    resolves them. Linking such a project at the registry's copy would undo both:
+    the link would escape the repo and the pin would stop meaning anything.
+    """
+    local = os.path.join(REGISTRY, project, "automations", "claude", "skills")
+    if project != "." and os.path.isdir(local):
+        return local
+    return SOURCE
+
+
 def link(project, dry_run=False):
     dest_dir = os.path.join(REGISTRY, project, ".claude", "skills")
     if not os.path.isdir(os.path.join(REGISTRY, project)):
         sys.exit(f"no such project: {project}")
     os.makedirs(dest_dir, exist_ok=True)
+    source = source_for(project)
+    if source != SOURCE:
+        print(f"  (using {project}'s own automations submodule)")
 
-    for skill in sorted(os.listdir(SOURCE)):
-        src = os.path.join(SOURCE, skill)
+    for skill in sorted(os.listdir(source)):
+        src = os.path.join(source, skill)
         if not os.path.isdir(src):
             continue
         dest = os.path.join(dest_dir, skill)

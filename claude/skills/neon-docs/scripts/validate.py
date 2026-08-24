@@ -572,6 +572,64 @@ def check_nav(data, fix):
     return stale
 
 
+def _git(*args):
+    import subprocess
+    try:
+        r = subprocess.run(["git", "-C", ROOT, *args],
+                           capture_output=True, text=True, timeout=20)
+        return r.stdout if r.returncode == 0 else None
+    except (OSError, subprocess.TimeoutExpired):
+        return None
+
+
+def check_history(base):
+    """Rules that only history can see: records must not be deleted, and an
+    open proposal's filename must not change.
+
+    Both were documented and unenforceable, which is the worst combination --
+    a rule with no check is a rule that erodes quietly, and these two erode in
+    ways the tree cannot show afterwards. A deleted record leaves no trace that
+    it existed; a renamed proposal orphans the tips attached to its id.
+    """
+    if _git("rev-parse", "--verify", "--quiet", base) is None:
+        warn(os.path.join(ROOT, ".git"),
+             f"cannot compare against {base!r} -- history checks skipped")
+        return
+    diff = _git("diff", "--name-status", "-M", f"{base}...HEAD", "--", "docs/")
+    if diff is None:
+        return
+
+    event_dirs = tuple(f"docs/{k}/" for k in EVENTS)
+    for line in diff.splitlines():
+        parts = line.split("\t")
+        code = parts[0]
+        if code.startswith("D") and len(parts) == 2:
+            path = parts[1]
+            if path.startswith(event_dirs) and not path.endswith("README.md"):
+                err(os.path.join(ROOT, path),
+                    "record deleted -- retire with a status instead; deleting erases "
+                    "the trail of what was considered and rejected")
+        elif code.startswith("R") and len(parts) == 3:
+            oldp, newp = parts[1], parts[2]
+            if not oldp.startswith("docs/proposals/"):
+                continue
+            blob = _git("show", f"{base}:{oldp}")
+            if blob is None:
+                continue
+            fm, perr = None, None
+            status = None
+            for ln in blob.split("\n")[1:]:
+                if ln.strip() == "---":
+                    break
+                if ln.startswith("status:"):
+                    status = ln.partition(":")[2].strip()
+            if status and status != "draft":
+                err(os.path.join(ROOT, newp),
+                    f"proposal renamed from {os.path.basename(oldp)} while status was "
+                    f"{status!r} -- filenames freeze when a proposal leaves draft, because "
+                    "people tip an id and renaming orphans the tips")
+
+
 def check_head_signed():
     """Shipping .allowed_signers declares that signing is expected here, so an
     unsigned HEAD deserves a warning -- a signed history whose newest commits
@@ -600,6 +658,9 @@ def main():
                     help="regenerate stale navigation blocks in place")
     ap.add_argument("--preflight", action="store_true",
                     help="list open research questions and exit non-zero if any remain")
+    ap.add_argument("--since", metavar="REF",
+                    help="also apply history rules (no deletions, frozen proposal "
+                         "filenames) by comparing against REF, e.g. origin/main")
     args = ap.parse_args()
 
     data = {kind: collect_events(kind) for kind in EVENTS}
@@ -616,6 +677,8 @@ def main():
     check_links()
     check_shared_block(args.fix)
     check_head_signed()
+    if args.since:
+        check_history(args.since)
     cross_check(data)
     living = {kind: collect_living(kind, set(data[LIVING[kind]["cites"][1]]))
               for kind in LIVING}
