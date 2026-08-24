@@ -407,14 +407,43 @@ def _fm(path):
     return _FM_CACHE[path]
 
 
+class ReadmeMarkersMissing(Exception):
+    """A directory README holds content but no index markers."""
+
+
 def apply_readme(path, block, fix):
-    """Replace the generated block; preserve anything a project wrote below it."""
+    """Replace the generated block; preserve anything a project wrote below it.
+
+    Three cases, and the middle one used to be silent data loss:
+
+      markers present      replace between them, keep everything else
+      file empty           write the block -- the bootstrap path, since --fix
+                           creates directory READMEs as empty files first
+      content, no markers  REFUSE, and say why
+
+    The old `else` branch wrote `block + "\n"` over whatever was there. That is
+    the one command the conventions tell everyone to run before committing, and
+    the conventions also invite hand-written content in exactly these files --
+    the pitch skill's index carries its two numbers and staleness report below
+    the generated block. Someone who wrote that before ever running --fix, or
+    who tidied the marker comments away, lost the work with nothing in the
+    output saying so.
+
+    Refusing rather than appending is deliberate: appending guesses where the
+    index belongs and would silently produce two blocks if the markers were
+    merely malformed. Erroring is also what this repo already decided for CI --
+    a workflow that silently regenerated would turn a loud failure into a quiet
+    one -- and the same argument applies to a tool rewriting a file it cannot
+    parse.
+    """
     original = open(path, encoding="utf-8").read()
     m = _find_block(original, INDEX_RE)
     if m:
         text = original[:m.start()] + block + original[m.end():]
-    else:
+    elif not original.strip():
         text = block + "\n"
+    else:
+        raise ReadmeMarkersMissing(path)
     if text == original:
         return False
     if fix:

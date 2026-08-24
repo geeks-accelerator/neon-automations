@@ -87,6 +87,7 @@ on GitHub. See the observation on
 | Directory README indexes current | error | `--fix` |
 | `CLAUDE.md` shared block matches `automations/claude/CLAUDE-shared.md` | error | `--fix` |
 | `CLAUDE.md` has no shared block at all | warn | add one, or opt out deliberately |
+| A directory README has content but no `index:begin`/`index:end` markers | error | add the marker pair where the index belongs. **This errors under `--fix` too** — regeneration refuses rather than rewriting a file it cannot parse, because the alternative is destroying hand-written content silently. An *empty* README is the bootstrap path and is filled normally |
 
 `--fix` regenerates **before** validating, so it can always recover from its own output. That
 ordering is load-bearing: a deleted record leaves a dangling link in a generated index, and

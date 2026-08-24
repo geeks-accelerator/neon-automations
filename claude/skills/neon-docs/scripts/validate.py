@@ -722,8 +722,19 @@ def check_nav(data, fix):
                 stale.append(os.path.relpath(readme, ROOT))
         if os.path.exists(readme):
             block = nav.render_readme(readme, kind, DOCS, data, set(LIVING))
-            if nav.apply_readme(readme, block, fix):
-                stale.append(os.path.relpath(readme, ROOT))
+            try:
+                if nav.apply_readme(readme, block, fix):
+                    stale.append(os.path.relpath(readme, ROOT))
+            except nav.ReadmeMarkersMissing:
+                # Errors even under --fix. Refusing to rewrite a file we cannot
+                # parse is the whole point; "fix" must not mean "overwrite".
+                err(readme, "directory README has content but no index markers -- add the "
+                            "pair where the generated index belongs:\n"
+                            "           <!-- index:begin -->\n"
+                            "           <!-- index:end -->\n"
+                            "         Everything outside them is preserved. Refusing rather "
+                            "than rewriting, because this file's hand-written content would "
+                            "be destroyed and nothing would say so.")
 
         for name in sorted(os.listdir(d)):
             if not name.endswith(".md") or name == "README.md":

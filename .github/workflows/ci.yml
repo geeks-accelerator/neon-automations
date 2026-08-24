@@ -199,6 +199,37 @@ jobs:
           V --since HEAD~1 >/dev/null 2>&1 || { echo "::error::draft-stage threshold tune rejected"; exit 1; }
           echo "draft threshold tune allowed"
 
+      # --fix must never rewrite a directory README it cannot parse. Four
+      # cases, because the fix turns on telling them apart: an empty file is
+      # the bootstrap path and must still be filled, while a file with content
+      # and no markers is data at risk and must refuse -- under --fix too.
+      - name: README regeneration refuses rather than clobbering
+        run: |
+          V() { python3 $GITHUB_WORKSPACE/claude/skills/neon-docs/scripts/validate.py "$@"; }
+
+          cp -R tests/fixture /tmp/rm1 && cd /tmp/rm1
+          printf '# Hand-written\n\nContent nobody generated.\n' > docs/pitch/README.md
+          V --fix >/dev/null 2>&1 && { echo "::error::--fix accepted a marker-less README"; exit 1; }
+          grep -q "Content nobody generated" docs/pitch/README.md \
+            || { echo "::error::hand-written README content was destroyed"; exit 1; }
+          V 2>&1 | grep -q "no index markers" \
+            || { echo "::error::error message did not name the cause"; exit 1; }
+          echo "marker-less README refused, content intact"
+
+          cp -R $GITHUB_WORKSPACE/tests/fixture /tmp/rm2 && cd /tmp/rm2
+          : > docs/pitch/README.md
+          V --fix >/dev/null
+          grep -q "index:begin" docs/pitch/README.md \
+            || { echo "::error::empty README was not bootstrapped"; exit 1; }
+          echo "empty README still bootstraps"
+
+          cp -R $GITHUB_WORKSPACE/tests/fixture /tmp/rm3 && cd /tmp/rm3
+          printf '<!-- index:begin -->\n<!-- index:end -->\n\n## Mine\n\nSurvives.\n' > docs/pitch/README.md
+          V --fix >/dev/null
+          grep -q "Survives." docs/pitch/README.md \
+            || { echo "::error::content below the block was lost"; exit 1; }
+          echo "content below the block preserved"
+
       # A marker named in frontmatter must not be treated as a block opener.
       # The fixture carries the case; this asserts the body survives, because
       # "clean" alone would pass on a file whose content had been eaten.
