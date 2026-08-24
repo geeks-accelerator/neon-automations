@@ -651,9 +651,22 @@ the full gate.
 - **Put a face on it.** Trust is best built face-to-face, and the segment should read **calm,
   honest, grounded** — no shouting, no overacting. Cheapest version: a face for the founder
   segment, stills for the rest.
-- **Theme.** Generate the music bed **once** and reuse it every round. A recurring show needs a
-  recurring theme; regenerating it throws away the sonic identity that makes a later episode
-  recognisably the same series.
+- **Theme.** `music.py` generates the bed **once**; `assemble.py` mixes it. A recurring show
+  needs a recurring theme, and regenerating it throws away the sonic identity that makes a
+  later episode recognisably the same series.
+
+  **So the theme is a source asset, not a build artifact** — committed, not gitignored, unlike
+  the audio, slides and video. Everything else in the pipeline is reproducible from tracked
+  text; a theme regenerated from the same prompt comes back *different*, so treating it as
+  derived would silently change the show on a fresh clone. The prompt is stored beside it.
+
+  **Set the bed level by measuring, not by ear-guessing a gain.** A fixed `volume=` multiplier
+  strands a generated theme's sparse opening — the first attempt put it 30 LU under the
+  narration, which is not subtle but absent. `loudnorm` to a target gives one predictable
+  level; the sidechain then does the only level change that should happen. At `-32` LUFS the
+  bed sits ~16 dB under a `-24.5` dB narration: audible between sentences, never competing.
+  Ducking moves it ~1.6 dB there, which is correct rather than weak — a bed already 16 dB down
+  does not need much, and heavy ducking would erase it.
 - **Slides — and the first question is which kind of slide.** A pitch deck carries headlines
   and figures: **the text is the content.** A first run generated moody editorial stills under
   an explicit *no text* rule and pushed every word into captions, which is music-video grammar

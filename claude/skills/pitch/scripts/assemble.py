@@ -83,6 +83,14 @@ def main():
     ap.add_argument("--slides", default=None, help="slide directory (default: alongside storyboard)")
     ap.add_argument("--out", default=None)
     ap.add_argument("--no-captions", action="store_true")
+    ap.add_argument("--theme", default=None,
+                    help="music bed (default: theme.mp3 beside the script; absent = no bed)")
+    ap.add_argument("--no-theme", action="store_true", help="skip the bed even if present")
+    ap.add_argument("--bed-lufs", type=float, default=-32.0,
+                    help="integrated loudness for the music bed. Chosen by measuring, not "
+                         "taste: at -32 the bed sits ~16 dB under a -24.5 dB narration, "
+                         "audible between sentences and never competing. -36 is nearly "
+                         "inaudible, -28 starts to fight the voice")
     ap.add_argument("--dry-run", action="store_true",
                     help="print the slide/timing plan and exit; no ffmpeg, no encode")
     ap.add_argument("--caption-theme", default="dark", choices=["dark", "light"],
@@ -114,6 +122,16 @@ def main():
         sys.exit(f"{len(seg_files)} audio segments but {len(segments)} script segments -- "
                  "re-render; they must correspond one to one")
     seg_dur = [probe(f) for f in seg_files]
+    measured_audio = probe(full_audio)
+
+    # The theme is generate-once and lives beside the script. Absent is fine --
+    # a round without a bed is a round without a bed, not an error.
+    theme = Path(args.theme) if args.theme else script.parent / "theme.mp3"
+    if not theme.exists():
+        theme = None
+    elif probe(theme) < measured_audio:
+        sys.exit(f"theme is {probe(theme):.1f}s but the narration is {measured_audio:.1f}s -- "
+                 f"regenerate it longer with music.py --seconds")
 
     # slides grouped by the segment named in their storyboard row
     by_seg = {}
@@ -146,8 +164,11 @@ def main():
               f"and will be ignored: {', '.join(orphans[:6])}"
               + (" ..." if len(orphans) > 6 else ""))
 
+    if args.no_theme:
+        theme = None
     total = sum(d for _, d in plan)
-    print(f"{len(plan)} slides over {total:.1f}s of narration")
+    print(f"{len(plan)} slides over {total:.1f}s of narration"
+          + (f"  |  bed: {theme.name}, ducked" if theme else "  |  no music bed"))
     for p, d in plan:
         print(f"  {d:5.1f}s  {p.name}")
 
@@ -188,9 +209,34 @@ def main():
             vf += f",subtitles='{srt}':force_style='{style}'"
 
         cmd = ["ffmpeg", "-y", "-f", "concat", "-safe", "0", "-i", str(listing),
-               "-i", str(full_audio), "-vf", vf, "-c:v", "libx264", "-preset", "medium",
-               "-crf", "20", "-r", "30", "-c:a", "aac", "-b:a", "192k",
-               "-shortest", "-movflags", "+faststart", str(out)]
+               "-i", str(full_audio)]
+        if theme:
+            # Sidechain ducking, not a fixed low volume. A bed set quiet enough
+            # never to bury a consonant is inaudible in the gaps; ducking lets
+            # it breathe between sentences and step back under speech, which is
+            # what makes it read as a theme rather than as noise.
+            cmd += ["-i", str(theme)]
+            # Loudness-normalise the bed rather than applying a fixed gain.
+            # A generated theme has its own dynamics -- a sparse fade-in, then
+            # denser passages -- so one gain that suits the middle leaves the
+            # opening inaudible. Measured: the first attempt put the theme's
+            # opening 30 LU under the narration, which is not "subtle", it is
+            # "absent". loudnorm gives the bed one predictable level, and the
+            # sidechain then does the only level change that should happen.
+            bed_i = args.bed_lufs
+            filt = (
+                f"[2:a]atrim=0:{measured_audio:.3f},"
+                f"loudnorm=I={bed_i}:TP=-2:LRA=7,"
+                f"afade=t=in:st=0:d=2.5,"
+                f"afade=t=out:st={max(measured_audio - 3.5, 0):.3f}:d=3.5[bed];"
+                "[1:a]asplit=2[voice][key];"
+                "[bed][key]sidechaincompress=threshold=0.03:ratio=8:attack=10:release=350[ducked];"
+                "[voice][ducked]amix=inputs=2:duration=first:normalize=0[a]"
+            )
+            cmd += ["-filter_complex", filt, "-map", "0:v", "-map", "[a]"]
+        cmd += ["-vf", vf, "-c:v", "libx264", "-preset", "medium",
+                "-crf", "20", "-r", "30", "-c:a", "aac", "-b:a", "192k",
+                "-shortest", "-movflags", "+faststart", str(out)]
         print("\nencoding...")
         r = subprocess.run(cmd, capture_output=True, text=True)
         if r.returncode != 0:
