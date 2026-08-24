@@ -336,7 +336,15 @@ def collect_claims():
                           "ids are what rounds and scripts cite, so two rows answering to "
                           "one id makes every citation of it ambiguous")
             ids[cid] = lineno
-            tags = [t for t in CLAIM_TAGS if f"`{t}`" in line]
+            # Read the TAG COLUMN, not the whole row. A citation that explains
+            # what would change a claim's tag -- "a WHOIS lookup would raise
+            # this to `CHECKED`" -- named a second tag in prose and tripped the
+            # dual-tag warning. The check was matching the sentence documenting
+            # the rule, which is the same false positive shape as a gate that
+            # greps for its own compliance note.
+            cells = [c.strip() for c in line.strip().strip("|").split("|")]
+            scope = cells[2] if len(cells) >= 4 else line
+            tags = [t for t in CLAIM_TAGS if f"`{t}`" in scope]
             if not tags:
                 err(path, f"claim {cid} carries no provenance tag -- one of "
                           f"{', '.join(CLAIM_TAGS)}")
