@@ -1,0 +1,42 @@
+name: ci
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+# Every consumer tracks this repo's main, so a defective push here breaks the
+# whole registry's CI with no signal at the source. This is that signal.
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Scripts parse
+        run: |
+          python3 -c "import ast,glob; [ast.parse(open(f).read()) for f in glob.glob('claude/skills/*/scripts/*.py') + ['link-skills.py']]"
+
+      - name: Skills carry frontmatter
+        run: |
+          for f in claude/skills/*/SKILL.md; do
+            head -1 "$f" | grep -qx -- '---' || { echo "no frontmatter: $f"; exit 1; }
+            grep -q '^name:' "$f" && grep -q '^description:' "$f" || { echo "missing name/description: $f"; exit 1; }
+          done
+
+      - name: Validator passes on the fixture
+        run: cd tests/fixture && python3 ../../claude/skills/neon-docs/scripts/validate.py
+
+      - name: Fix is idempotent on a clean tree
+        run: |
+          cd tests/fixture && python3 ../../claude/skills/neon-docs/scripts/validate.py --fix
+          git diff --exit-code -- tests/fixture
+
+      - name: Validator rejects a broken tree
+        run: |
+          cp -R tests/fixture /tmp/broken
+          sed -i 's/^id: 2026-01-01-example-decision$/id: wrong-id/' /tmp/broken/docs/decisions/2026-01-01-example-decision.md
+          cd /tmp/broken && python3 $GITHUB_WORKSPACE/claude/skills/neon-docs/scripts/validate.py && exit 1 || echo "rejected, as it should"

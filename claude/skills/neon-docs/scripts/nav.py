@@ -20,6 +20,13 @@ into the files. Two rules follow from that guide and both are load-bearing:
 import os
 import re
 
+# Canonical web URL for the skill. Generated READMEs link here rather than to the
+# local .claude/skills path: that path resolves on disk but crosses a symlink,
+# and GitHub's web UI renders a symlink as a text blob containing the target
+# path -- every such link 404s for anyone browsing the repo. A URL into the
+# public tooling repo works on the web, in standalone clones, and in CI alike.
+SKILL_URL = "https://github.com/geeks-accelerator/neon-automations/blob/main/claude/skills/neon-docs/SKILL.md"
+
 INDEX_BEGIN, INDEX_END = "<!-- index:begin -->", "<!-- index:end -->"
 INDEX_RE = re.compile(re.escape(INDEX_BEGIN) + r".*?" + re.escape(INDEX_END), re.S)
 
@@ -286,7 +293,7 @@ def render(path, kind, fm, doc_id, events, back, docs_root, is_readme, living_ci
     return parent, "\n".join(out)
 
 
-def render_readme(path, kind, docs_root, events, living_kinds, skill_rel):
+def render_readme(path, kind, docs_root, events, living_kinds):
     """Generate a directory README: purpose, how to read it, and a live index."""
     title, purpose = DIRECTORY_DOC[kind]
     how = HOW_TO_READ.get(kind) or HOW_TO_READ["living" if kind in living_kinds else "events"]
@@ -313,7 +320,7 @@ def render_readme(path, kind, docs_root, events, living_kinds, skill_rel):
             fm = _fm(os.path.join(d, n))
             date, slug = n[:10], n[11:-3]
             out.append(f"| {date} | [{slug}]({n}) | {fm.get(col, '—')} |")
-    out += ["", f"Conventions, schema, and the validator: [neon-docs]({skill_rel}).",
+    out += ["", f"Conventions, schema, and the validator: [neon-docs]({SKILL_URL}).",
             "", INDEX_END]
     return "\n".join(out)
 

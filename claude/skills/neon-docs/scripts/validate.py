@@ -349,8 +349,34 @@ def check_shared_block(fix):
 LINK_RE = re.compile(r"\[[^\]]*\]\(([^)\s]+)(?:\s+\"[^\"]*\")?\)")
 
 
+def web_invisible(base, target):
+    """Does this link work on disk but 404 on GitHub's web UI?
+
+    Two cases. A symlink anywhere in the path: GitHub renders a symlink as a
+    text blob holding the target path, so nothing resolves through or at it.
+    A submodule as an intermediate component: the web UI links a submodule
+    entry to its own repo, but a deeper path into one 404s. A link whose final
+    target IS a submodule directory works, so only strict traversal is flagged.
+
+    This matters because the filesystem check alone passes on all of these --
+    which is false confidence for exactly the readers the public ledger story
+    is about: people auditing the repo in a browser.
+    """
+    cur = base
+    parts = os.path.normpath(target).split(os.sep)
+    for i, part in enumerate(parts):
+        cur = os.path.normpath(os.path.join(cur, part))
+        if os.path.islink(cur):
+            return "crosses a symlink"
+        last = i == len(parts) - 1
+        if (not last and os.path.isdir(cur) and cur != ROOT
+                and os.path.exists(os.path.join(cur, ".git"))):
+            return "reaches into a submodule"
+    return None
+
+
 def check_links():
-    """Every relative markdown link must resolve.
+    """Every relative markdown link must resolve -- on disk AND on the web UI.
 
     Navigation without link checking is worse than no navigation, because a link
     that once worked builds trust that a 404 then betrays. The frontmatter graph
@@ -359,22 +385,34 @@ def check_links():
 
     External URLs are skipped -- reaching the network would make the check slow
     and flaky, and a private repo's raw URLs are unreachable from CI anyway.
+
+    Root-level documents (README.md, CLAUDE.md) are scanned as well as docs/:
+    the first web-invisible links found in practice were in CLAUDE.md.
     """
+    files = []
+    for name in sorted(os.listdir(ROOT)):
+        if name.endswith(".md"):
+            files.append((ROOT, name))
     for dirpath, dirnames, filenames in os.walk(DOCS):
         dirnames[:] = [d for d in dirnames if not d.startswith(".")]
-        for name in filenames:
-            if not name.endswith(".md"):
+        files += [(dirpath, n) for n in filenames if n.endswith(".md")]
+
+    for dirpath, name in files:
+        path = os.path.join(dirpath, name)
+        with open(path, encoding="utf-8") as fh:
+            text = fh.read()
+        for target in LINK_RE.findall(text):
+            if target.startswith(("http://", "https://", "mailto:", "#")):
                 continue
-            path = os.path.join(dirpath, name)
-            with open(path, encoding="utf-8") as fh:
-                text = fh.read()
-            for target in LINK_RE.findall(text):
-                if target.startswith(("http://", "https://", "mailto:", "#")):
-                    continue
-                resolved = os.path.normpath(
-                    os.path.join(dirpath, target.split("#", 1)[0]))
-                if not os.path.exists(resolved):
-                    err(path, f"broken link: {target}")
+            bare = target.split("#", 1)[0]
+            resolved = os.path.normpath(os.path.join(dirpath, bare))
+            if not os.path.exists(resolved):
+                err(path, f"broken link: {target}")
+                continue
+            why = web_invisible(dirpath, bare)
+            if why:
+                err(path, f"link {target} {why} -- it resolves on disk but 404s "
+                          "on GitHub's web UI; link the target repo's URL instead")
 
 
 OPEN_STATES = {"draft", "open", "funded", "approved", "building",
@@ -443,9 +481,7 @@ def check_nav(data, fix):
             path = os.path.join(d, name)
             is_readme = name == "README.md"
             if is_readme:
-                skill_rel = os.path.relpath(
-                    os.path.join(ROOT, ".claude", "skills", "neon-docs", "SKILL.md"), d)
-                block = nav.render_readme(path, kind, DOCS, data, set(LIVING), skill_rel)
+                block = nav.render_readme(path, kind, DOCS, data, set(LIVING))
                 if nav.apply_readme(path, block, fix):
                     stale.append(os.path.relpath(path, ROOT))
                 continue
@@ -462,6 +498,28 @@ def check_nav(data, fix):
             if nav.apply(path, parent, block, fix):
                 stale.append(os.path.relpath(path, ROOT))
     return stale
+
+
+def check_head_signed():
+    """Shipping .allowed_signers declares that signing is expected here, so an
+    unsigned HEAD deserves a warning -- a signed history whose newest commits
+    are quietly unsigned is worse than an unsigned one, because the signatures
+    that are there imply the rest. Presence check only (no verification), so CI
+    runners without signing config cannot false-positive; and a warning rather
+    than an error, because PR merge refs are synthesized unsigned by GitHub.
+    """
+    if not os.path.exists(os.path.join(ROOT, ".allowed_signers")):
+        return
+    try:
+        import subprocess
+        head = subprocess.run(["git", "-C", ROOT, "cat-file", "commit", "HEAD"],
+                              capture_output=True, text=True, timeout=10)
+        if head.returncode == 0 and "gpgsig" not in head.stdout:
+            warn(os.path.join(ROOT, ".allowed_signers"),
+                 "HEAD is unsigned in a repo that ships .allowed_signers -- "
+                 "signing config is per-working-copy and does not follow a clone")
+    except (OSError, subprocess.TimeoutExpired):
+        pass          # no git available; nothing to conclude
 
 
 def main():
@@ -485,6 +543,7 @@ def main():
     check_strays()
     check_links()
     check_shared_block(args.fix)
+    check_head_signed()
     cross_check(data)
     living = {kind: collect_living(kind, set(data[LIVING[kind]["cites"][1]]))
               for kind in LIVING}
