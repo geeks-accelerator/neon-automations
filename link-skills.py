@@ -139,6 +139,67 @@ def check_pins():
     return 1 if behind else 0
 
 
+def verify_pointers():
+    """Every submodule pointer must reference a commit reachable on its remote.
+
+    The registry's commit history is the delivery ledger: signed pointers are the
+    claim that project X was at state Y on date Z. That claim is only worth
+    something if the SHA still resolves. A pointer to a commit that was never
+    pushed, or that a force-push orphaned, leaves a signed record attesting to
+    something nobody can retrieve -- which is worse than no record, because it
+    carries a signature.
+
+    Needs the network, so it is a command rather than part of the validator.
+    """
+    import subprocess
+
+    def git(cwd, *args):
+        try:
+            r = subprocess.run(["git", "-C", cwd, *args],
+                               capture_output=True, text=True, timeout=30)
+            return r.stdout.strip() if r.returncode == 0 else None
+        except (OSError, subprocess.TimeoutExpired):
+            return None
+
+    out = git(REGISTRY, "submodule", "status", "--recursive")
+    if out is None:
+        sys.exit("cannot read submodule status")
+
+    bad = 0
+    for line in out.splitlines():
+        parts = line.strip().split()
+        if len(parts) < 2:
+            continue
+        sha, path = parts[0].lstrip("+-U"), parts[1]
+        sub = os.path.join(REGISTRY, path)
+        if not os.path.isdir(sub):
+            print(f"  MISSING   {path} — not checked out")
+            bad += 1
+            continue
+        # is the pinned commit an ancestor of the remote's main?
+        git(sub, "fetch", "-q", "origin", "main")
+        head = git(sub, "rev-parse", "origin/main")
+        if head is None:
+            print(f"  UNKNOWN   {path} — cannot reach origin")
+            bad += 1
+            continue
+        merged = subprocess.run(["git", "-C", sub, "merge-base", "--is-ancestor", sha, head],
+                                capture_output=True)
+        if merged.returncode == 0:
+            behind = git(sub, "rev-list", "--count", f"{sha}..{head}") or "0"
+            note = "current" if behind == "0" else f"{behind} behind"
+            print(f"  ok        {path}  {sha[:7]}  ({note})")
+        else:
+            print(f"  UNREACHABLE {path}  {sha[:7]} is not on origin/main — "
+                  "the ledger points at a commit nobody can fetch")
+            bad += 1
+    if bad:
+        print(f"\n{bad} pointer(s) unverifiable. A signed pointer to an unfetchable commit "
+              "is a\nledger entry that cannot be checked, which is the one thing the ledger "
+              "must not be.")
+    return 1 if bad else 0
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     ap.add_argument("project", nargs="?",
@@ -147,10 +208,14 @@ def main():
     ap.add_argument("--dry-run", action="store_true")
     ap.add_argument("--check-pins", action="store_true",
                     help="report which repos lag the tooling's main, and stop")
+    ap.add_argument("--verify-pointers", action="store_true",
+                    help="check every submodule pointer resolves on its remote, and stop")
     args = ap.parse_args()
 
     if args.check_pins:
         sys.exit(check_pins())
+    if args.verify_pointers:
+        sys.exit(verify_pointers())
     if not os.path.isdir(SOURCE):
         sys.exit(f"no skills found at {SOURCE}")
     targets = list(projects()) if args.all else ([args.project] if args.project else [])

@@ -348,8 +348,9 @@ def _fm(path):
 def apply_readme(path, block, fix):
     """Replace the generated block; preserve anything a project wrote below it."""
     original = open(path, encoding="utf-8").read()
-    if INDEX_RE.search(original):
-        text = INDEX_RE.sub(lambda _: block, original, count=1)
+    m = _find_block(original, INDEX_RE)
+    if m:
+        text = original[:m.start()] + block + original[m.end():]
     else:
         text = block + "\n"
     if text == original:
@@ -358,14 +359,37 @@ def apply_readme(path, block, fix):
         open(path, "w", encoding="utf-8").write(text)
     return True
 
+CODE_SPAN_RE = re.compile(r"`[^`\n]*`")
+
+
+def _mask_code_spans(text):
+    """Blank out inline code spans so delimiter-matching cannot see them.
+
+    A document that *writes about* the delimiters -- `<!-- nav -->` in a code
+    span -- would otherwise have that occurrence treated as a real block opener,
+    and everything from there to the closing delimiter deleted. That destroyed
+    eleven lines of a committed decision record before anyone noticed.
+
+    Masking rather than skipping, so offsets are preserved and the real block
+    can still be located by index.
+    """
+    return CODE_SPAN_RE.sub(lambda m: " " * len(m.group(0)), text)
+
+
+def _find_block(text, pattern):
+    """Locate a generated block, ignoring any mention inside a code span."""
+    return pattern.search(_mask_code_spans(text))
+
+
 def apply(path, parent, nav, fix):
     """Insert or refresh the generated blocks. Returns True if the file was stale."""
     original = open(path, encoding="utf-8").read()
     text = original
 
     block = f"{PARENT_BEGIN}\n{parent}\n{PARENT_END}"
-    if PARENT_RE.search(text):
-        text = PARENT_RE.sub(lambda _: block, text, count=1)
+    m = _find_block(text, PARENT_RE)
+    if m:
+        text = text[:m.start()] + block + text[m.end():]
     else:
         m = H1_RE.search(text)
         if m:
@@ -374,7 +398,10 @@ def apply(path, parent, nav, fix):
             text = block + "\n\n" + text
 
     if nav:
-        text = NAV_RE.sub("", text).rstrip() + "\n\n" + nav + "\n"
+        m = _find_block(text, NAV_RE)
+        if m:
+            text = text[:m.start()] + text[m.end():]
+        text = text.rstrip() + "\n\n" + nav + "\n"
 
     if text == original:
         return False
