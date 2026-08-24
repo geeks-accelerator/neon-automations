@@ -91,14 +91,66 @@ def link(project, dry_run=False):
             os.symlink(rel, dest)
 
 
+def check_pins():
+    """Report which repos are running behind the tooling's main.
+
+    Deliberately a human-run report rather than a validator check. A gate that
+    fails because someone else pushed upstream breaks builds with no local
+    change -- the same shape as a staleness check against a static fixture, and
+    the same reason it does not belong in CI.
+    """
+    import subprocess
+
+    def git(cwd, *args):
+        try:
+            r = subprocess.run(["git", "-C", cwd, *args],
+                               capture_output=True, text=True, timeout=20)
+            return r.stdout.strip() if r.returncode == 0 else None
+        except (OSError, subprocess.TimeoutExpired):
+            return None
+
+    upstream = git(os.path.join(REGISTRY, "automations"), "ls-remote", "origin", "main")
+    if not upstream:
+        sys.exit("cannot reach the tooling remote")
+    head = upstream.split()[0]
+    print(f"tooling main  {head[:7]}\n")
+
+    behind = 0
+    for name in ["."] + [p for p in projects() if p != "."]:
+        sub = os.path.join(REGISTRY, name, "automations")
+        if not os.path.isdir(sub):
+            continue
+        pinned = git(sub, "rev-parse", "HEAD")
+        if not pinned:
+            continue
+        label = "registry" if name == "." else name
+        if pinned == head:
+            print(f"  current  {label}")
+        else:
+            behind += 1
+            n = git(sub, "rev-list", "--count", f"{pinned}..{head}") or "?"
+            print(f"  BEHIND   {label}  pinned {pinned[:7]}, {n} commit(s) back")
+    if behind:
+        print(f"\n{behind} repo(s) behind. Bump with:")
+        print("  git -C <repo>/automations fetch origin main && \\")
+        print("    git -C <repo>/automations reset --hard origin/main")
+        print("  then `validate.py --fix` there, since a conventions change leaves the")
+        print("  duplicated CLAUDE.md block stale.")
+    return 1 if behind else 0
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     ap.add_argument("project", nargs="?",
                     help='project directory name, or "." for the registry itself')
     ap.add_argument("--all", action="store_true", help="every project in the registry")
     ap.add_argument("--dry-run", action="store_true")
+    ap.add_argument("--check-pins", action="store_true",
+                    help="report which repos lag the tooling's main, and stop")
     args = ap.parse_args()
 
+    if args.check_pins:
+        sys.exit(check_pins())
     if not os.path.isdir(SOURCE):
         sys.exit(f"no skills found at {SOURCE}")
     targets = list(projects()) if args.all else ([args.project] if args.project else [])
