@@ -75,6 +75,17 @@ on GitHub. See the observation on
 ordering is load-bearing: a deleted record leaves a dangling link in a generated index, and
 gating regeneration on a clean run would make the one command that repairs it refuse to run.
 
+## History rules — `--since REF` only
+
+Applied when comparing against a base ref, because the tree alone cannot show them.
+
+| check | level | remedy |
+|---|---|---|
+| No record deleted from an event directory | error | retire with a status — `declined`, `abandoned`, `wontfix`, `superseded` |
+| A proposal's filename is unchanged once it left `draft` | error | retitle in the body and leave the filename; people tip an id, and renaming orphans the tips |
+
+Renaming a proposal **while still `draft`** is allowed — nothing is attached to it yet.
+
 ## Repository hygiene
 
 | check | level | remedy |

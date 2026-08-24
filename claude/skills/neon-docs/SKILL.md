@@ -262,6 +262,22 @@ This tooling lives in a **public** repo, so CI fetches it with no credential. It
 private and symlinked from the registry until that cost two rounds of token debugging for a
 docs validator; making it public turned a standing secret into a `git clone`.
 
+## Two rules enforced against history
+
+```bash
+python3 .claude/skills/neon-docs/scripts/validate.py --since origin/main
+```
+
+**Records are never deleted** — retire with a status instead. Deleting erases the trail of
+what was considered and rejected, which is usually the most useful thing in the tree later.
+
+**A proposal's filename freezes when it leaves `draft`** — people tip an id, and renaming
+orphans the tips. Retitle in the body instead. Renaming while still `draft` is fine, because
+nothing is attached yet.
+
+Both run in CI against the base branch. They need history the tree does not carry, which is
+why they are a separate flag rather than part of the default run.
+
 ## Links that cross a repo boundary
 
 A relative link that crosses a **symlink** or reaches **into a submodule** resolves on disk
