@@ -204,10 +204,9 @@ CI never auto-fixes. A workflow that silently regenerated and committed would tu
 failure into a quiet one, which is the wrong direction — the run tells you to run `--fix`
 and stops.
 
-Projects need a cross-repo token to reach the shared tooling. `GITHUB_TOKEN` is scoped to a
-single repository, so an org secret `DOCS_CI_TOKEN` with read access to the registry has to
-exist before any project's checks can pass. See
-[the observation](../../../docs/observations/2026-08-24-standalone-ci-needs-the-registry.md).
+This tooling lives in a **public** repo, so CI fetches it with no credential. It was
+private and symlinked from the registry until that cost two rounds of token debugging for a
+docs validator; making it public turned a standing secret into a `git clone`.
 
 ## Registry level or project level
 

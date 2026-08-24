@@ -37,6 +37,7 @@ regenerated would turn a loud failure into a quiet one.
 signatures are load-bearing rather than cosmetic. `.allowed_signers` ships in each repo so
 anyone can verify from a clone.
 
-**Skills are symlinked from the registry's `automations/`.** Edit them there, never through
-the link — a change made through a link still lands in the registry, but a change made to a
-project's own copy silently forks the tooling.
+**Skills are symlinked from `automations/`**, a public submodule
+([neon-automations](https://github.com/geeks-accelerator/neon-automations)). Edit them
+there, never through a project's own copy — a change made through the link lands in the
+tooling repo, but a copy silently forks it.
