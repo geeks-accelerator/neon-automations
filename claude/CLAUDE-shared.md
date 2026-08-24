@@ -37,6 +37,22 @@ python3 .claude/skills/neon-docs/scripts/validate.py --fix
 navigation — and so does CI, which never auto-fixes, because a workflow that silently
 regenerated would turn a loud failure into a quiet one.
 
+**Work on `main`. Do not create branches.** Several agents share one working directory, so a
+branch is not isolation — `git checkout -b` switches the branch for **every** agent in that
+folder, and the next commit any of them makes lands on yours without either of you seeing it.
+A branch here buys nothing and silently entangles unrelated work.
+
+Three habits follow from the shared tree, and they matter more than the branch rule:
+
+- **Stage explicit paths.** Never `git add -A` or `git add .` — it commits whatever another
+  agent has in flight, and the first sign is their half-finished file in your commit.
+- **Re-read before you edit, and do not trust a stale `git status`.** The tree changes under
+  you. A file that was uncommitted when you looked may be committed by the time you write.
+- **Merge before you push**, since main moves while you work.
+
+If a task genuinely needs isolation, a **git worktree** gives it — a separate directory with
+its own branch. A branch on its own does not, which is the mistake this rule exists to stop.
+
 **Commits are SSH-signed.** The registry's commit history is the delivery ledger, so
 signatures are load-bearing rather than cosmetic. `.allowed_signers` ships in each repo so
 anyone can verify from a clone.
