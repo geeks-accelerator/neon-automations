@@ -381,3 +381,39 @@ def apply(path, parent, nav, fix):
     if fix:
         open(path, "w", encoding="utf-8").write(text)
     return True
+
+
+def starter_docs_readme(events, living):
+    """A minimal docs/README.md for a tree that has none.
+
+    Deliberately thin. This file is a project's own map and accumulates
+    project-specific content, so it is written once and never regenerated --
+    which means anything put here would be a guess a project has to delete
+    rather than a default it can build on.
+    """
+    ev = " ".join(f"`{k}`" for k in events)
+    lv = " ".join(f"`{k}`" for k in living)
+    return f"""# docs
+
+## Two kinds of document
+
+| | | naming | how it changes |
+|---|---|---|---|
+| **Events** | {ev} | `2026-08-23-slug.md` | **accrete** — status advances, notes append, records get superseded |
+| **Living** | {lv} | `repo-topology.md` | **overwritten** — what stops being true is deleted |
+
+An event happened on a day; its account of what happened is never rewritten. A living
+document describes what currently is, and carries no date because a date implies a snapshot
+frozen at that moment.
+
+Everything outside the event directories is a living document, including this file.
+
+## Conventions
+
+Schemas, the validator, and how to file each kind of record:
+[neon-docs]({SKILL_URL}).
+
+```bash
+python3 .claude/skills/neon-docs/scripts/validate.py --fix
+```
+"""

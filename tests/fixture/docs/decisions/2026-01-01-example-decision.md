@@ -9,7 +9,7 @@ research: [2026-01-01-example-scan]
 # An example decision
 
 <!-- nav:parent -->
-**Parent:** [docs](../README.md)
+**Parent:** [decisions](README.md) · [docs](../README.md)
 <!-- /nav:parent -->
 
 Context, alternatives, decision, consequences.

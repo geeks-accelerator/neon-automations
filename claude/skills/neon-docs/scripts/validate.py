@@ -471,20 +471,45 @@ def check_nav(data, fix):
     back = nav.build_graph(data, cites, DOCS, parse_frontmatter)
     stale = []
 
+    # Every directory README points at docs/README.md as its parent, so a tree
+    # without one bootstraps into eight broken links. Created only when absent --
+    # this file carries project-specific content once a project has any, and
+    # regenerating it would clobber that.
+    docs_readme = os.path.join(DOCS, "README.md")
+    if not os.path.exists(docs_readme):
+        if fix:
+            with open(docs_readme, "w", encoding="utf-8") as fh:
+                fh.write(nav.starter_docs_readme(EVENTS, LIVING))
+        else:
+            stale.append(os.path.relpath(docs_readme, ROOT))
+
     for kind in list(EVENTS) + list(LIVING):
         d = os.path.join(DOCS, kind)
         if not os.path.isdir(d):
             continue
+
+        # Render the README unconditionally, before touching anything else. An
+        # empty directory has no files to iterate, so a loop over its contents
+        # could never create one -- which left new projects with untracked empty
+        # directories (git stores no empty dirs) that failed validation on the
+        # first clone. The README is also what makes each directory survive a
+        # clone at all.
+        readme = os.path.join(d, "README.md")
+        if not os.path.exists(readme):
+            if fix:
+                open(readme, "w", encoding="utf-8").close()
+            else:
+                stale.append(os.path.relpath(readme, ROOT))
+        if os.path.exists(readme):
+            block = nav.render_readme(readme, kind, DOCS, data, set(LIVING))
+            if nav.apply_readme(readme, block, fix):
+                stale.append(os.path.relpath(readme, ROOT))
+
         for name in sorted(os.listdir(d)):
-            if not name.endswith(".md"):
+            if not name.endswith(".md") or name == "README.md":
                 continue
             path = os.path.join(d, name)
-            is_readme = name == "README.md"
-            if is_readme:
-                block = nav.render_readme(path, kind, DOCS, data, set(LIVING))
-                if nav.apply_readme(path, block, fix):
-                    stale.append(os.path.relpath(path, ROOT))
-                continue
+            is_readme = False
             fm = {}
             if not is_readme:
                 fm, perr = parse_frontmatter(path)
@@ -570,7 +595,7 @@ def main():
             errors.append(f"{f}: navigation block is out of date -- run with --fix")
 
     counts = " ".join(f"{k}={len(v)}" for k, v in data.items())
-    counts += " | " + " ".join(f"{k}={n}" for k, n in living.items())
+    counts += " | " + " ".join(f"{k}={len(v)}" for k, v in living.items())
     print(f"events: {counts}")
     for w in warnings:
         print(f"  warn  {w}")

@@ -9,7 +9,7 @@ plans: [2026-01-01-example-plan]
 # An example proposal
 
 <!-- nav:parent -->
-**Parent:** [docs](../README.md)
+**Parent:** [proposals](README.md) · [docs](../README.md)
 <!-- /nav:parent -->
 
 What is proposed.

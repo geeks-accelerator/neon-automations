@@ -9,7 +9,7 @@ sources: [https://example.com]
 # An example scan
 
 <!-- nav:parent -->
-**Parent:** [docs](../README.md)
+**Parent:** [research](README.md) · [docs](../README.md)
 <!-- /nav:parent -->
 
 ## Findings

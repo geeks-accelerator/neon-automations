@@ -7,7 +7,7 @@ decisions: [2026-01-01-example-decision]
 # Example component
 
 <!-- nav:parent -->
-**Parent:** [docs](../README.md)
+**Parent:** [architecture](README.md) · [docs](../README.md)
 <!-- /nav:parent -->
 
 How it works today.
