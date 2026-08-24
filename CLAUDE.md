@@ -14,8 +14,8 @@ repo's own checks. Treat edits accordingly — this repo's blast radius is the w
 - **Edit here, never through a project's symlink or copy.** A change through the link lands
   here anyway; a change to a copy silently forks the tooling.
 - **Skills live under `claude/skills/<name>/`** — `neon-docs` (record shapes, validator),
-  `research` (method), `pitch` (production). The seam is shape vs. method: schemas and
-  enforcement in `neon-docs`, procedure in the others.
+  `research` (method), `pitch` (evidence and production, in two modes). The seam is shape vs.
+  method: schemas and enforcement in `neon-docs`, procedure in the others.
 - **`claude/CLAUDE-shared.md` is the canonical conventions block.** Each consuming repo
   carries a checked duplicate; after editing it, run `validate.py --fix` in every consumer.
 - **Enforcement belongs in the validator, not in skill prose.** Skills instruct; the
@@ -33,10 +33,12 @@ python3 .claude/skills/neon-docs/scripts/validate.py --fix
 ```
 
 CI here runs the same thing against `tests/fixture/`: warning-free validation, a clean
-preflight, an idempotence check, a broken-tree rejection (plain **and** preflight), a
-dynamic open-question gate test with the clock injected at runtime, and a check that every
-research mode the validator defines is documented in the skill docs. Keep the fixture
-minimal; it is the only executable spec of the validator.
+preflight, an idempotence check, a broken-tree rejection (plain **and** preflight), a dynamic
+open-question gate test with the clock injected at runtime, schema rejection for `rounds/` and
+`pitch/`, coverage for the optional directories in **both** directions — present and absent —
+and drift checks that every research mode and every docs directory the validator defines is
+documented wherever those tables are duplicated. Keep the fixture minimal; it is the only
+executable spec of the validator.
 
 ## Commits are SSH-signed
 

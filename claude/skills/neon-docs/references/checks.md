@@ -26,6 +26,7 @@ Derived from the source; if the two disagree, the source is right and this file 
 | Required fields present for the type | error | see [schemas.md](schemas.md) |
 | `status` is in the type's vocabulary | error | see [schemas.md](schemas.md) |
 | `severity` is in `low` / `medium` / `high` | error | issues only |
+| `pitch_mode` is `full` / `turn` | error | rounds only |
 | Dates are real ISO dates | error | `YYYY-MM-DD` |
 | Research `mode` is a known mode | error | add it to `RESEARCH_MODES` if it is a genuinely new kind of fact |
 | Research `current` with no `sources` | warn | research nobody can re-check is an assertion |
@@ -35,10 +36,14 @@ Derived from the source; if the two disagree, the source is right and this file 
 ## Cross-references — all must resolve
 
 `plan.proposal` · `issue.observation` · `decision.supersedes` · `decision.research` ·
-`research.supersedes` · `architecture.decisions` · `vision.proposals`
+`research.supersedes` · `architecture.decisions` · `vision.proposals` · `pitch.research` ·
+`round.claims` and `round.demoted` (against the rows of `docs/pitch/claims.md`)
 
 All errors. A dangling reference means either a typo or a record that was deleted instead of
 retired.
+
+**`rounds/` and `pitch/` are optional**: their absence is not an error, because they are the
+output of raising funding rounds and most projects never do. Present means held to schema.
 
 ## Semantics
 
@@ -50,6 +55,17 @@ retired.
 | Observation `n` is an integer ≥ 1 | error | a sighting count starts at 1 |
 | Observation `last_seen` ≥ `first_seen` | error | |
 | Observation at `n: 1` whose prose says "always" / "never" | warn | one sighting is an instance, not a rule — wait for recurrence |
+| Round `turn` is an integer ≥ 1, unique across rounds | error | the ordinal is how rounds get referred to |
+| A `posted` (or later) round has a `threshold:` | error | it is written before posting — a number chosen after seeing the result is not a threshold |
+| A `passed` / `failed` / `inconclusive` round has a `result:` | error | the outcome is what the record holds next to the threshold |
+| `docs/pitch/` exists with a `claims.md` | error | every claim originates in the ledger; a pitch tree without one cannot hold the round invariant |
+| Every `\| C-NNN \|` row in `claims.md` carries exactly one provenance tag | error / warn | untagged is an error; two tags warn — only a composite built from existing rows may carry both, with its counting convention declared |
+| Claim ids in `claims.md` are unique | error | ids are what rounds cite; two rows answering to one id makes every citation ambiguous |
+
+Rows inside fenced code blocks in `claims.md` are **not** parsed — a fenced example is
+documentation about the format, not a claim. Without that guard the ledger's own "how to
+write a row" section would error as a duplicate id, the recorded pattern of marker-matching
+tools eating the documents that describe them.
 
 ## Links
 
@@ -84,8 +100,11 @@ Applied when comparing against a base ref, because the tree alone cannot show th
 |---|---|---|
 | No record deleted from an event directory | error | retire with a status — `declined`, `abandoned`, `wontfix`, `superseded` |
 | A proposal's filename is unchanged once it left `draft` | error | retitle in the body and leave the filename; people tip an id, and renaming orphans the tips |
+| A round's `threshold:` is unchanged once it left `draft` | error | it froze at posting; revising it to match the result is the failure the field exists to prevent — renaming the file in the same commit does not evade this |
 
-Renaming a proposal **while still `draft`** is allowed — nothing is attached to it yet.
+Renaming a proposal **while still `draft`** is allowed — nothing is attached to it yet, and
+the same applies to tuning a draft round's threshold: both freeze at the moment they go
+public, not before.
 
 ## Repository hygiene
 

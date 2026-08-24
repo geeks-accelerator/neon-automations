@@ -8,19 +8,24 @@ runs is a validator nobody runs.
 There are two kinds of document, and nearly everything follows from which one
 you are writing:
 
-  EVENTS happened on a day.  docs/{decisions,issues,proposals,plans,observations,research}
+  EVENTS happened on a day.  docs/{decisions,issues,proposals,plans,observations,research,rounds}
     Dated filenames. The account of what happened is never rewritten -- status
     advances, notes append, records are superseded or closed by newer ones. The
     call that turned out wrong is the most useful thing in the tree later, and
     editing it away is how a team forgets why it stopped doing something.
 
-  LIVING documents describe what currently is.  docs/{architecture,vision}
+  LIVING documents describe what currently is.  docs/{architecture,vision,pitch}
     Plain slugs, no dates -- a date implies a snapshot frozen at that moment,
     which is the opposite of a living document. These get wholly rewritten
     whenever the thing they describe changes; paragraphs that stop being true
     are deleted rather than appended to.
 
 Events accrete. Living documents get overwritten.
+
+Eight of those ten are the shape of the record, and every project keeps them.
+docs/rounds/ and docs/pitch/ are the output of raising funding rounds, which most
+projects never do -- they are held to their schema when present and absent without
+complaint. See OPTIONAL.
 """
 import argparse
 import os
@@ -102,6 +107,17 @@ EVENTS = {
         "required": ["id", "title", "status", "decided"],
         "status": ["proposed", "accepted", "superseded", "deprecated"],
     },
+    # A turn of the funding loop: the script, the claims it used, the ask, the
+    # threshold, and -- appended after -- the result. An event rather than a
+    # living document for one reason: the threshold has to be immutable. A number
+    # chosen after seeing the result is not a threshold, and living semantics
+    # would let it be revised to match with nothing in the tree showing it.
+    "rounds": {
+        "date_field": "opened",
+        "required": ["id", "title", "turn", "pitch_mode", "status", "opened"],
+        "status": ["draft", "posted", "passed", "failed", "inconclusive", "abandoned"],
+        "pitch_mode": ["full", "turn"],
+    },
 }
 
 # field name in the living doc -> directory its ids must resolve against.
@@ -111,7 +127,39 @@ EVENTS = {
 LIVING = {
     "architecture": {"cites": ("decisions", "decisions")},
     "vision": {"cites": ("proposals", "proposals")},
+    # The claims ledger and the narrative derived from it. It cites research/
+    # rather than decisions/ because that is what makes the RESEARCHED tag
+    # structural: a claim sourced from outside the repository has to point at a
+    # dated scan carrying a staleness horizon, not at a URL in prose.
+    "pitch": {"cites": ("research", "research")},
 }
+
+# Directories whose absence is not an error. The eight others are the shape of
+# the record; these two are the output of an activity most projects never
+# perform -- this registry raises no rounds and will never hold either. Present
+# means held to the schema; absent means nothing.
+#
+# The cost is real: these are the first directories whose absence carries no
+# information, so "missing, or not applicable?" becomes a question the tree
+# cannot answer. Taken over every project carrying an empty pitch directory for
+# a pitch it will never write.
+OPTIONAL = frozenset({"rounds", "pitch"})
+
+# Built from the table rather than written out, so adding an event directory
+# does not leave a stale enumeration in three error messages.
+EVENT_DIRS = "docs/{" + ",".join(EVENTS) + "}"
+
+# A round's status vocabulary splits three ways, and two of the splits carry
+# checks rather than only labels: once a round is public its threshold is
+# frozen, and once numbers come back it owes a result.
+ROUND_POSTED = ("posted", "passed", "failed", "inconclusive")
+ROUND_RESOLVED = ("passed", "failed", "inconclusive")
+
+# A claim row in docs/pitch/claims.md is a table row whose first cell is an id.
+# Fixing the row format is what turns "every claim id referenced anywhere
+# resolves to a row in the ledger" from a rule someone remembers into a check.
+CLAIM_ROW_RE = re.compile(r"^\|\s*(C-\d+)\s*\|")
+CLAIM_TAGS = ("EXTRACTED", "RESEARCHED", "ASSERTED", "CHECKED")
 
 EVENT_NAME_RE = re.compile(r"^(?P<date>\d{4}-\d{2}-\d{2})-(?P<slug>[a-z0-9][a-z0-9-]*)\.md$")
 LIVING_NAME_RE = re.compile(r"^[a-z0-9][a-z0-9-]*\.md$")
@@ -133,7 +181,12 @@ def warn(path, msg):
 def parse_frontmatter(path):
     """Return (dict, error_or_None). Handles the key: value and key: [a, b] subset."""
     with open(path, encoding="utf-8") as fh:
-        text = fh.read()
+        return parse_fm_text(fh.read())
+
+
+def parse_fm_text(text):
+    """The parser, over text rather than a path -- history checks read a blob
+    out of git and have no file to point at."""
     if not text.startswith("---\n"):
         return None, "missing YAML frontmatter (file must start with ---)"
     end = text.find("\n---", 3)
@@ -170,7 +223,8 @@ def check_date(path, field, value):
 def entries(kind):
     d = os.path.join(DOCS, kind)
     if not os.path.isdir(d):
-        err(d, "directory is missing")
+        if kind not in OPTIONAL:
+            err(d, "directory is missing")
         return
     for name in sorted(os.listdir(d)):
         if name.endswith(".md") and name != "README.md":
@@ -199,7 +253,7 @@ def collect_events(kind):
         df = spec["date_field"]
         if fm.get(df) and fm[df] != m.group("date"):
             err(path, f"filename date {m.group('date')} does not match {df}: {fm[df]}")
-        for field in ("status", "severity"):
+        for field in ("status", "severity", "pitch_mode"):
             allowed = spec.get(field)
             if allowed and fm.get(field) and fm[field] not in allowed:
                 err(path, f"{field} {fm[field]!r} not in {allowed}")
@@ -217,8 +271,7 @@ def collect_living(kind, resolvable):
     for name, path in entries(kind):
         if DATED_PREFIX_RE.match(name):
             err(path, f"dated filename in {kind}/ -- a dated record is an event and belongs "
-                      f"in docs/{{decisions,issues,proposals,plans,observations,research}}; "
-                      f"{kind} describes what currently is")
+                      f"in {EVENT_DIRS}; {kind} describes what currently is")
             continue
         if not LIVING_NAME_RE.match(name):
             err(path, f"{kind} filenames are plain slugs like repo-topology.md")
@@ -242,6 +295,105 @@ def collect_living(kind, resolvable):
                 err(path, f"cites {ref!r}, which does not exist in docs/{cite_dir}")
         found[name[:-3]] = (path, fm)
     return found
+
+
+def collect_claims():
+    """Parse the claim ids out of docs/pitch/claims.md, checking each is tagged.
+
+    Returns the id set, or None when there is no pitch tree to resolve against.
+    The ledger is the one place a claim may originate, so an untagged row here
+    is the exact defect the tags exist to prevent -- an ASSERTED claim reading
+    like an EXTRACTED one.
+    """
+    d = os.path.join(DOCS, "pitch")
+    if not os.path.isdir(d):
+        return None
+    path = os.path.join(d, "claims.md")
+    if not os.path.exists(path):
+        err(d, "docs/pitch/ exists without claims.md -- every claim originates in the "
+               "ledger, and a pitch tree without one cannot hold the invariant that a "
+               "round may only claim what is already written down")
+        return None
+    ids = {}
+    fenced = False
+    with open(path, encoding="utf-8") as fh:
+        for lineno, line in enumerate(fh, start=1):
+            # A fenced example row is documentation about the format, not a
+            # claim. Without this, the ledger's own "how to write a row" section
+            # parses as a duplicate id -- the recorded pattern of tools that
+            # match literal markers eating the documents that describe them.
+            if line.lstrip().startswith("```"):
+                fenced = not fenced
+                continue
+            if fenced:
+                continue
+            m = CLAIM_ROW_RE.match(line)
+            if not m:
+                continue
+            cid = m.group(1)
+            if cid in ids:
+                err(path, f"duplicate claim id {cid} on lines {ids[cid]} and {lineno} -- "
+                          "ids are what rounds and scripts cite, so two rows answering to "
+                          "one id makes every citation of it ambiguous")
+            ids[cid] = lineno
+            tags = [t for t in CLAIM_TAGS if f"`{t}`" in line]
+            if not tags:
+                err(path, f"claim {cid} carries no provenance tag -- one of "
+                          f"{', '.join(CLAIM_TAGS)}")
+            elif len(tags) > 1:
+                warn(path, f"claim {cid} carries {len(tags)} tags ({', '.join(tags)}) -- "
+                           "only a composite built from rows already in the ledger may, and "
+                           "only with its counting convention declared beside it. A new "
+                           "fact gets split into two claims instead of one hedged one")
+    return set(ids)
+
+
+def check_rounds(data, claim_ids):
+    """Rules a round's status implies, and the ledger link.
+
+    The threshold and result checks are the machine half of why a round is an
+    event record at all: a threshold written after the numbers came back is not
+    a threshold, and neither prose nor a convention can stop that on its own.
+    """
+    seen = {}
+    for rid, (path, fm) in sorted(data["rounds"].items()):
+        try:
+            n = int(fm.get("turn"))
+        except (TypeError, ValueError):
+            n = None
+        if n is None or n < 1:
+            err(path, f"turn must be an integer >= 1, got {fm.get('turn')!r}")
+        elif n in seen:
+            err(path, f"turn {n} is already claimed by {seen[n]} -- the ordinal is how "
+                      "rounds get referred to, and two records answering to one number "
+                      "makes every later reference ambiguous")
+        else:
+            seen[n] = rid
+
+        status = fm.get("status")
+        if status in ROUND_POSTED and not fm.get("threshold"):
+            err(path, f"a {status!r} round carries no threshold -- it has to be written "
+                      "before the round posts. A number chosen after seeing the result is "
+                      "not a threshold, and an experiment that cannot fail cannot succeed")
+        if status in ROUND_RESOLVED and not fm.get("result"):
+            err(path, f"a {status!r} round carries no result -- the outcome is what the "
+                      "record exists to hold next to the threshold")
+
+        # demoted ids resolve too: demotion changes a claim's standing, it does
+        # not delete the row, so a demoted id that is not in the ledger is a typo
+        # or a claim that was removed instead of demoted.
+        for field in ("claims", "demoted"):
+            refs = fm.get(field) or []
+            if isinstance(refs, str):
+                refs = [refs]
+            for ref in refs:
+                if claim_ids is None:
+                    err(path, f"{field} lists {ref!r} with no docs/pitch/claims.md to "
+                              "resolve it against -- a round may only reference what the "
+                              "ledger already holds")
+                elif ref not in claim_ids:
+                    err(path, f"{field} lists {ref!r}, which is not a row in "
+                              "docs/pitch/claims.md")
 
 
 def generalizes(path):
@@ -524,8 +676,7 @@ def check_strays():
         if not os.path.isfile(path) or not name.endswith(".md"):
             continue
         if DATED_PREFIX_RE.match(name):
-            err(path, "dated filename at the docs/ root -- events belong in "
-                      "docs/{decisions,issues,proposals,plans,observations,research}; "
+            err(path, f"dated filename at the docs/ root -- events belong in {EVENT_DIRS}; "
                       "everything else here is a living document")
 
 
@@ -631,6 +782,28 @@ def check_history(base):
                 err(os.path.join(ROOT, path),
                     "record deleted -- retire with a status instead; deleting erases "
                     "the trail of what was considered and rejected")
+        elif (code.startswith("M") and len(parts) == 2) or \
+             (code.startswith("R") and len(parts) == 3 and
+              parts[1].startswith("docs/rounds/")):
+            # Renames are checked too, or a same-commit rename would carry a
+            # revised threshold past a check that only reads M rows.
+            oldp = parts[1]
+            path = parts[-1]
+            if not oldp.startswith("docs/rounds/") or path.endswith("README.md"):
+                continue
+            blob = _git("show", f"{base}:{oldp}")
+            if blob is None:
+                continue
+            was, _ = parse_fm_text(blob)
+            if not was or was.get("status") not in ROUND_POSTED:
+                continue
+            now, _ = parse_frontmatter(os.path.join(ROOT, path))
+            if now and now.get("threshold") != was.get("threshold"):
+                err(os.path.join(ROOT, path),
+                    f"threshold changed after this round reached {was['status']!r}: "
+                    f"{was.get('threshold')!r} -> {now.get('threshold')!r}. It is written "
+                    "before posting and never revised -- that immutability is the only "
+                    "reason a round is an event record rather than a living document")
         elif code.startswith("R") and len(parts) == 3:
             oldp, newp = parts[1], parts[2]
             if not oldp.startswith("docs/proposals/"):
@@ -702,6 +875,7 @@ def main():
     if args.since:
         check_history(args.since)
     cross_check(data)
+    check_rounds(data, collect_claims())
     living = {kind: collect_living(kind, set(data[LIVING[kind]["cites"][1]]))
               for kind in LIVING}
 

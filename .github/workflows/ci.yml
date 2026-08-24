@@ -90,6 +90,111 @@ jobs:
           python3 $GITHUB_WORKSPACE/claude/skills/neon-docs/scripts/validate.py --fix >/dev/null
           python3 $GITHUB_WORKSPACE/claude/skills/neon-docs/scripts/validate.py --preflight
 
+      # Optional directories are optional in both directions: present means held
+      # to the schema, absent means nothing. Without this the fixture would only
+      # ever exercise the present path, and a project with no rounds would find
+      # out on its own tree.
+      - name: rounds/ and pitch/ are optional
+        run: |
+          cp -R tests/fixture /tmp/nopitch && cd /tmp/nopitch
+          rm -rf docs/rounds docs/pitch
+          # Removing them leaves generated back-edges pointing into the deleted
+          # tree, which the validator correctly rejects -- so --fix first. That
+          # also checks the second half: nav has to drop a dangling edge, not
+          # only add new ones.
+          python3 $GITHUB_WORKSPACE/claude/skills/neon-docs/scripts/validate.py --fix >/dev/null
+          out=$(python3 $GITHUB_WORKSPACE/claude/skills/neon-docs/scripts/validate.py)
+          echo "$out"
+          echo "$out" | grep -q "clean (0 warning" || { echo "::error::absent optional dirs should not warn"; exit 1; }
+
+      - name: Round and pitch schemas are enforced
+        run: |
+          run() { python3 $GITHUB_WORKSPACE/claude/skills/neon-docs/scripts/validate.py; }
+          cp -R tests/fixture /tmp/badround && cd /tmp/badround
+
+          # a mode outside the vocabulary
+          sed -i 's/^pitch_mode: full$/pitch_mode: partial/' docs/rounds/2026-01-01-example-round.md
+          run && { echo "::error::bad pitch_mode accepted"; exit 1; } || echo "bad pitch_mode rejected"
+          sed -i 's/^pitch_mode: partial$/pitch_mode: full/' docs/rounds/2026-01-01-example-round.md
+
+          # the ordinal is required -- a round nobody can refer to by number
+          sed -i '/^turn: 1$/d' docs/rounds/2026-01-01-example-round.md
+          run && { echo "::error::missing turn accepted"; exit 1; } || echo "missing turn rejected"
+          git -C $GITHUB_WORKSPACE show HEAD:tests/fixture/docs/rounds/2026-01-01-example-round.md \
+            > docs/rounds/2026-01-01-example-round.md
+
+          # a dated filename in a living directory is an event in the wrong place
+          mv docs/pitch/claims.md docs/pitch/2026-01-01-claims.md
+          run && { echo "::error::dated filename in pitch/ accepted"; exit 1; } || echo "dated pitch filename rejected"
+          mv docs/pitch/2026-01-01-claims.md docs/pitch/claims.md
+
+          # a posted round without a threshold has failed to be an experiment
+          sed -i 's/^status: draft$/status: posted/; /^threshold:/d' docs/rounds/2026-01-01-example-round.md
+          run && { echo "::error::posted round without threshold accepted"; exit 1; } || echo "missing threshold rejected"
+          git -C $GITHUB_WORKSPACE show HEAD:tests/fixture/docs/rounds/2026-01-01-example-round.md \
+            > docs/rounds/2026-01-01-example-round.md
+
+          # a round may only claim what the ledger holds
+          sed -i 's/^claims: \[C-001\]$/claims: [C-001, C-999]/' docs/rounds/2026-01-01-example-round.md
+          run && { echo "::error::unresolvable claim id accepted"; exit 1; } || echo "dangling claim id rejected"
+          sed -i 's/^claims: \[C-001, C-999\]$/claims: [C-001]/' docs/rounds/2026-01-01-example-round.md
+
+          # an untagged ledger row is the exact defect the tags exist to prevent
+          printf '| C-004 | An untagged claim | nothing | nowhere |\n' >> docs/pitch/claims.md
+          run && { echo "::error::untagged claim accepted"; exit 1; } || echo "untagged claim rejected"
+
+      # The history rules run only under --since and against *committed* state,
+      # so nothing above exercises them -- and unexercised enforcement is how
+      # the preflight bug happened. Round-trip each rule with real commits, and
+      # grep for the specific message so a different failure cannot stand in.
+      - name: History rules fire, and draft-stage edits stay legal
+        run: |
+          cp -R tests/fixture /tmp/hist && cd /tmp/hist
+          git init -q . && git add -A
+          git -c user.email=ci@test -c user.name=ci commit -qm base
+          V() { python3 $GITHUB_WORKSPACE/claude/skills/neon-docs/scripts/validate.py "$@"; }
+          C() { git -c user.email=ci@test -c user.name=ci commit -qm "$1"; }
+
+          # deleting a record is retirement done wrong. --fix first, so the
+          # regenerated index is clean and the history rule is the ONLY error.
+          git rm -q docs/decisions/2026-01-01-example-decision.md
+          V --fix >/dev/null 2>&1 || true
+          git add -A && C del
+          V --since HEAD~1 2>&1 | grep -q "record deleted" || { echo "::error::deletion not caught"; exit 1; }
+          echo "deletion rejected"; git reset -q --hard HEAD~1
+
+          # a proposal's filename freezes when it leaves draft (fixture's is approved)
+          git mv docs/proposals/2026-01-01-example-proposal.md docs/proposals/2026-01-01-renamed-proposal.md
+          sed -i 's/^id: 2026-01-01-example-proposal$/id: 2026-01-01-renamed-proposal/' docs/proposals/2026-01-01-renamed-proposal.md
+          V --fix >/dev/null 2>&1 || true
+          git add -A && C ren
+          V --since HEAD~1 2>&1 | grep -q "filenames freeze" || { echo "::error::non-draft rename not caught"; exit 1; }
+          echo "frozen filename enforced"; git reset -q --hard HEAD~1
+
+          # a round's threshold freezes when it leaves draft
+          sed -i 's/^status: draft$/status: posted/' docs/rounds/2026-01-01-example-round.md
+          V --fix >/dev/null; git add -A && C posted
+          sed -i 's/>=40% completion/>=20% completion/' docs/rounds/2026-01-01-example-round.md
+          git add -A && C sneaky
+          V --since HEAD~1 2>&1 | grep -q "threshold changed after" || { echo "::error::threshold revision not caught"; exit 1; }
+          echo "threshold freeze enforced"; git reset -q --hard HEAD~2
+
+          # a same-commit rename must not carry a revised threshold past the check
+          sed -i 's/^status: draft$/status: posted/' docs/rounds/2026-01-01-example-round.md
+          V --fix >/dev/null; git add -A && C posted2
+          git mv docs/rounds/2026-01-01-example-round.md docs/rounds/2026-01-01-renamed-round.md
+          sed -i 's/^id: 2026-01-01-example-round$/id: 2026-01-01-renamed-round/; s/>=40% completion/>=20% completion/' docs/rounds/2026-01-01-renamed-round.md
+          V --fix >/dev/null 2>&1 || true
+          git add -A && C sneakyren
+          V --since HEAD~1 2>&1 | grep -q "threshold changed after" || { echo "::error::rename-evasion not caught"; exit 1; }
+          echo "rename evasion closed"; git reset -q --hard HEAD~2
+
+          # while still draft, tuning it is legal -- freeze at posting, not before
+          sed -i 's/>=40% completion/>=35% completion/' docs/rounds/2026-01-01-example-round.md
+          git add -A && C tune
+          V --since HEAD~1 >/dev/null 2>&1 || { echo "::error::draft-stage threshold tune rejected"; exit 1; }
+          echo "draft threshold tune allowed"
+
       # The mode table is duplicated into the skill docs, which is a drift
       # surface of exactly the class the shared-block check exists for. The
       # validator is authoritative; the docs must mention every mode it defines.
@@ -110,5 +215,31 @@ jobs:
               bad += [(f, m) for m in modes if f"\x60{m}\x60" not in doc]
           for f, m in bad:
               print(f"::error::{f} does not document mode {m!r}")
+          sys.exit(1 if bad else 0)
+          PY
+
+      # The EVENTS/LIVING tables are duplicated into three prose files and, one
+      # repo away, into every consumer's CLAUDE.md. Same drift surface as the
+      # mode table above, same rule: the validator is authoritative, and a
+      # directory it enforces has to be documented wherever the tables are shown.
+      - name: Directory tables documented everywhere they are claimed
+        run: |
+          python3 - <<'PY'
+          import ast, io, sys
+          tree = ast.parse(io.open("claude/skills/neon-docs/scripts/validate.py").read())
+          tbl = {}
+          for node in ast.walk(tree):
+              if isinstance(node, ast.Assign) and getattr(node.targets[0], "id", "") in ("EVENTS", "LIVING"):
+                  tbl[node.targets[0].id] = sorted(ast.literal_eval(node.value))
+          assert tbl.get("EVENTS") and tbl.get("LIVING"), "EVENTS/LIVING not found"
+          dirs = tbl["EVENTS"] + tbl["LIVING"]
+          bad = []
+          for f in ("claude/CLAUDE-shared.md",
+                    "claude/skills/neon-docs/SKILL.md",
+                    "claude/skills/neon-docs/references/schemas.md"):
+              doc = io.open(f).read()
+              bad += [(f, d) for d in dirs if f"\x60{d}\x60" not in doc]
+          for f, d in bad:
+              print(f"::error::{f} does not document directory {d!r}")
           sys.exit(1 if bad else 0)
           PY

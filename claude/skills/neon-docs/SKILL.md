@@ -31,8 +31,8 @@ Nearly everything else follows from which one you are writing.
 
 | | | naming | how it changes |
 |---|---|---|---|
-| **Events** | `decisions` `issues` `proposals` `plans` `observations` `research` | `2026-08-23-slug.md` | **accrete** — status advances, notes append, records are superseded or closed by newer ones |
-| **Living** | `architecture` `vision` | `repo-topology.md` | **overwritten** — paragraphs that stop being true are deleted |
+| **Events** | `decisions` `issues` `proposals` `plans` `observations` `research` `rounds` | `2026-08-23-slug.md` | **accrete** — status advances, notes append, records are superseded or closed by newer ones |
+| **Living** | `architecture` `vision` `pitch` | `repo-topology.md` | **overwritten** — paragraphs that stop being true are deleted |
 
 An event happened on a day, for reasons true at the time, with alternatives that were live
 at the time. Its *account of what happened* is never rewritten. Status may advance from
@@ -45,15 +45,15 @@ a snapshot frozen at that moment — the opposite of a document whose job is to 
 When the system changes, rewrite it; delete what is no longer the case.
 
 **Events accrete. Living documents get overwritten.** The validator enforces the boundary in
-both directions: a dated filename in `architecture/` or `vision/` is an event filed in the
-wrong place, and so is an `opened:`, `status:`, or `decided:` field there.
+both directions: a dated filename in a living directory is an event filed in the wrong place,
+and so is an `opened:`, `status:`, or `decided:` field there.
 
 Living documents cite the events that produced them — `architecture` cites `decisions`,
-`vision` cites `proposals` — and those ids must resolve. That link is why the split is worth
-having: the synthesis stays traceable to the record, so a reader who disagrees with how
-something works can find out why it was chosen without asking anyone.
+`vision` cites `proposals`, `pitch` cites `research` — and those ids must resolve. That link
+is why the split is worth having: the synthesis stays traceable to the record, so a reader who
+disagrees with how something works can find out why it was chosen without asking anyone.
 
-**The classification is total.** The six event directories are the complete list of where
+**The classification is total.** The seven event directories are the complete list of where
 events live. *Everything else in the repo is a living document* — both `README.md`s, every
 directory README, `CLAUDE.md`, this file, and the numbered founding docs at the root of
 `docs/`. None of them carry dates in their filenames, and all of them get rewritten in place.
@@ -74,8 +74,19 @@ reading on its own, it earns a `decisions/` entry rather than a banner in the pr
 | `docs/observations` | something surprised you or cost debugging time |
 | `docs/research` | you looked something up externally and the answer shapes a choice |
 | `docs/decisions` | a non-obvious, hard-to-reverse choice is made |
+| `docs/rounds` | a turn of the funding loop is opened, posted, or resolved |
 | `docs/architecture` | describing how the system currently works |
 | `docs/vision` | describing a future state nobody has committed to |
+| `docs/pitch` | the claims ledger and the narrative a project can defend |
+
+**Eight of the ten are required; `rounds/` and `pitch/` are not.** The eight are the shape of
+the record and every project keeps them, empty or not. The other two are the output of
+raising funding rounds — most projects never do, and this registry never will. They are held
+to their schema when present and absent without complaint.
+
+The cost of that exemption is that these are the first directories whose absence carries no
+information: *missing, or not applicable?* is a question the tree cannot answer. Taken over
+every project carrying an empty `pitch/` for a pitch it will never write.
 
 For events, the filename stem *is* the id, and the date in it must match the record's date
 field. The directory carries the type, so no prefix is needed.
@@ -96,8 +107,8 @@ them.
 1. **Name it** `YYYY-MM-DD-lowercase-slug.md`, dated the day it is opened. The slug
    describes the thing, not the category — `2026-08-23-tip-weighted-backlog.md`, not
    `2026-08-23-proposal.md`.
-2. **Set `id`** to the filename stem, and the date field (`opened`, `first_seen`, or
-   `decided`) to the date in the filename. The validator checks both agree — a file whose
+2. **Set `id`** to the filename stem, and the date field (`opened`, `first_seen`,
+   `decided`, or `conducted`) to the date in the filename. The validator checks both agree — a file whose
    name and contents disagree about its own identity is unusable to anything reading the
    tree programmatically.
 3. **Write the frontmatter** per the schema, with `id` matching the filename.
@@ -262,7 +273,7 @@ This tooling lives in a **public** repo, so CI fetches it with no credential. It
 private and symlinked from the registry until that cost two rounds of token debugging for a
 docs validator; making it public turned a standing secret into a `git clone`.
 
-## Two rules enforced against history
+## Three rules enforced against history
 
 ```bash
 python3 .claude/skills/neon-docs/scripts/validate.py --since origin/main
@@ -275,8 +286,13 @@ what was considered and rejected, which is usually the most useful thing in the 
 orphans the tips. Retitle in the body instead. Renaming while still `draft` is fine, because
 nothing is attached yet.
 
-Both run in CI against the base branch. They need history the tree does not carry, which is
-why they are a separate flag rather than part of the default run.
+**A round's `threshold:` freezes when it leaves `draft`** — the same shape as the filename
+rule, for the same reason: something the public acted on cannot be quietly revised. A
+threshold edited after posting is a threshold chosen after seeing the result, which is not a
+threshold. Tuning it while still `draft` is fine.
+
+All three run in CI against the base branch. They need history the tree does not carry, which
+is why they are a separate flag rather than part of the default run.
 
 ## Links that cross a repo boundary
 

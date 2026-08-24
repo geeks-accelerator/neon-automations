@@ -6,8 +6,12 @@ registry. **One definition, used by the registry and every project in it.**
 ```
 claude/
 ├── CLAUDE-shared.md          conventions block, duplicated into each CLAUDE.md and checked
-└── skills/neon-docs/         the docs skill: conventions, schemas, validator
+└── skills/
+    ├── neon-docs/            record shapes: conventions, schemas, the validator
+    ├── research/             method: dated, sourced scans that decisions cite
+    └── pitch/                evidence and production: the claims ledger, two modes
 link-skills.py                creates and repairs the symlinks into projects
+tests/fixture/                a minimal valid tree; the validator's executable spec
 ```
 
 ## Why this is public

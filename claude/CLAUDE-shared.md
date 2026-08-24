@@ -4,10 +4,14 @@ Two kinds of document, and nearly everything follows from which one you are writ
 
 | | | naming | how it changes |
 |---|---|---|---|
-| **Events** | `decisions` `issues` `proposals` `plans` `observations` `research` | `2026-08-23-slug.md` | **accrete** — status advances, notes append, records get superseded |
-| **Living** | `architecture` `vision` | `repo-topology.md` | **overwritten** — what stops being true is deleted |
+| **Events** | `decisions` `issues` `proposals` `plans` `observations` `research` `rounds`† | `2026-08-23-slug.md` | **accrete** — status advances, notes append, records get superseded |
+| **Living** | `architecture` `vision` `pitch`† | `repo-topology.md` | **overwritten** — what stops being true is deleted |
 
-Everything outside the six event directories is a living document: both READMEs, every
+† **Optional.** `rounds/` and `pitch/` are the output of raising funding rounds, which
+most projects never do. Held to their schema when present, absent without complaint. The
+other eight are the shape of the record and every project keeps them.
+
+Everything outside the event directories is a living document: both READMEs, every
 directory README, this file, and any founding docs at the root of `docs/`. Git is their
 event log, so superseded passages get rewritten rather than banner-marked; reasoning worth
 keeping on its own earns a `decisions/` entry.

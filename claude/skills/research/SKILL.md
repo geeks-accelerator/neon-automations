@@ -58,6 +58,11 @@ only ever surfaces encouraging absences is not research.
 Every claim links to where it came from. The validator warns when a `current` scan lists no
 `sources`, because research nobody can re-check is an assertion wearing a lab coat.
 
+Scans are also what a pitch's `RESEARCHED` claims cite — the [`pitch`](../pitch/SKILL.md)
+skill's provenance tags resolve external facts against `docs/research/` ids rather than URLs
+in prose, so a scan's sourcing is load-bearing twice: once for the decision that cites it,
+and again for every public claim that rests on it.
+
 Prefer primary where the number matters. Where you use a secondary source citing a study,
 say so rather than presenting it as first-hand.
 

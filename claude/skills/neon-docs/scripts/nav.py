@@ -56,6 +56,11 @@ DIRECTORY_DOC = {
         "How the system works today, derived from the records that produced it."),
     "vision": ("future state",
         "Where this is going. Not commitments."),
+    "rounds": ("the delivery ledger",
+        "One record per turn of the funding loop: the script, the claims it used, the ask, "
+        "the threshold set before posting, and the result appended after."),
+    "pitch": ("what this project can defend",
+        "The claims ledger and the narrative derived from it. Every claim tagged and cited."),
 }
 
 HOW_TO_READ = {
@@ -72,6 +77,15 @@ HOW_TO_READ = {
     "living": ("**These are rewritten in place, so what you see is what is currently true.** "
                "There are no dates in the filenames for that reason. Git holds what they used "
                "to say."),
+    "rounds": ("**Newest first.** The threshold in each record was written *before* that round "
+               "posted and is never revised, so a record whose result and threshold disagree is "
+               "the most informative kind here. `inconclusive` means the turn repeats rather "
+               "than that it failed."),
+    "pitch": ("**Start at the index** — it carries the two numbers and the staleness report — "
+              "then `claims.md`, the only place a claim is allowed to originate. Every tag is a "
+              "statement about evidence, not about confidence: `EXTRACTED` means the repository "
+              "*demonstrates* it, and a citation that merely locates prose saying so does not "
+              "qualify."),
 }
 
 PARENT_BEGIN, PARENT_END = "<!-- nav:parent -->", "<!-- /nav:parent -->"
@@ -224,6 +238,50 @@ def next_steps(kind, fm, doc_id, path, events, back):
         elif status == "superseded":
             note = "Superseded. Kept unedited -- the reasoning that stopped holding is the useful part."
 
+    elif kind == "rounds":
+        if status == "draft" and not fm.get("threshold"):
+            steps.append(("Write the threshold into this record's `threshold:` field, then post",
+                          "a threshold chosen after seeing the result is not a threshold, and "
+                          "holding it still is the only reason this is an event record"))
+        elif status == "draft":
+            steps.append(("Post it, and set status to `posted`",
+                          "the threshold freezes at that moment -- while draft it may still "
+                          "be tuned, so nothing is measured until this goes out"))
+        elif status == "posted":
+            note = ("Posted and measuring. The threshold above is immutable now -- a round that "
+                    "revises it after seeing numbers has measured nothing.")
+        elif status == "inconclusive":
+            steps.append(("Repeat the turn",
+                          "a result between the pass and fail bands distinguishes nothing, and "
+                          "repeating is cheaper than arguing about which way it leaned"))
+        elif status in ("passed", "failed"):
+            steps.append(("File what surprised you as an observation",
+                          "a round is the only cheap evidence this loop produces, and the next "
+                          "turn overwrites the context that made it legible"))
+        elif status == "abandoned":
+            note = ("Abandoned. Kept in place -- a turn that was never posted still records what "
+                    "was about to be claimed and why it stopped.")
+
+    elif kind == "pitch":
+        if doc_id == "claims":
+            note = ("The ledger. Every claim in the tree appears here once, tagged and cited, "
+                    "and a claim that cannot be written here does not go in the pitch. On a "
+                    "re-run, check citations *before* writing anything and **demote** what no "
+                    "longer verifies -- a stale `EXTRACTED` claim is worse than an `ASSERTED` "
+                    "one, because it carries authority it no longer has.")
+        elif doc_id == "reactions":
+            note = ("Human validation. Until people outside this project have reacted to the "
+                    "script, the pitch is a draft and the index has to say so.")
+        elif doc_id == "riskiest-assumptions":
+            note = ("The real number is here, not in the extracted ratio: of the three most "
+                    "load-bearing and least evidenced assumptions, how many the repository "
+                    "actually demonstrates. A pitch can be four-fifths extracted and rest "
+                    "entirely on the fifth.")
+        else:
+            note = ("Maintained by a pitch re-run rather than by hand. Claims originate in "
+                    "`claims.md`; anything asserted here that is not in the ledger is "
+                    "unsourced by construction.")
+
     return steps[:MAX_STEPS], note
 
 
@@ -245,9 +303,13 @@ def render(path, kind, fm, doc_id, events, back, docs_root, is_readme, living_ci
         ref = fm.get(field)
         if ref and ref in events.get(target_kind, {}):
             related.append((label, events[target_kind][ref][0]))
-    for ref in (fm.get("research") or []):
-        if ref in events.get("research", {}):
-            related.append(("Based on", events["research"][ref][0]))
+    # A living directory whose cite field *is* `research` renders that same edge
+    # as "Derives from" below. Without this guard the scan appears twice under
+    # two labels, because the dedup key is (label, target) and the labels differ.
+    if living_cites.get(kind, (None, None))[0] != "research":
+        for ref in (fm.get("research") or []):
+            if ref in events.get("research", {}):
+                related.append(("Based on", events["research"][ref][0]))
     for ref in (fm.get("supersedes") or []):
         if ref in events.get("decisions", {}):
             related.append(("Supersedes", events["decisions"][ref][0]))

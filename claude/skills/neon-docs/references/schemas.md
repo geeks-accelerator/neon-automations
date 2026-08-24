@@ -173,7 +173,54 @@ the reasoning that turned out wrong is the most useful thing in the directory la
 
 ---
 
-## living documents — `architecture` and `vision`
+## rounds
+
+One record per turn of the funding loop. **Optional directory** — a project that raises no
+rounds carries none.
+
+```yaml
+---
+id: 2026-08-24-turn-1
+title: Turn 1 — pitch and close the loop
+turn: 1                      # the ordinal; integer >= 1, unique across rounds
+pitch_mode: full             # full | turn — which mode produced this round's script
+status: passed               # created as draft; result and resolution arrive later
+opened: 2026-08-24
+claims: [C-001, C-004]       # optional; every id must be a row in docs/pitch/claims.md
+threshold: ">=30 starts with >=40% completion passes; <=15% fails"
+result: "41 starts, 46% completion"   # required once passed / failed / inconclusive
+demoted: []                  # optional; claim ids that failed this turn's re-verification
+proposal: 2026-08-24-turn-1-pitch-and-close-the-loop   # optional; must resolve
+---
+```
+
+**status:** `draft` · `posted` · `passed` · `failed` · `inconclusive` · `abandoned`
+
+The record holds the script, the claims it used, the itemized ask, the **threshold**, and —
+appended after — the result. The body elaborates; the frontmatter is what the machine reads.
+
+**Why this is an event and not a living document: the threshold has to be immutable.** A
+number chosen after seeing the result is not a threshold, and an experiment that cannot fail
+cannot succeed either. Under living semantics the threshold could be revised to match what
+came back with nothing in the tree showing it. Here the account is never rewritten — and the
+validator enforces it three ways:
+
+- a round reaching `posted` (or beyond) without a `threshold:` is an error;
+- a `passed` / `failed` / `inconclusive` round without a `result:` is an error;
+- under `--since`, **editing `threshold:` after the round left `draft` is an error** — the
+  field freezes at the moment of posting, exactly like a proposal's filename freezes when it
+  leaves draft.
+
+`inconclusive` means the turn **repeats** — it is not a soft failure.
+
+`demoted:` is how the full-rebuild trigger gets its data: turn mode re-verifies the claims
+its script uses and records the ids that failed, so *demotion rate over a third* is
+computable from the record instead of from memory. Empty is a finding too — it says the
+re-check ran and everything held.
+
+---
+
+## living documents — `architecture`, `vision`, and `pitch`
 
 Not event logs. These describe what currently **is**, so they are rewritten continuously and
 carry **plain slugs, never dates** — a date would imply a snapshot frozen at that moment.
@@ -193,6 +240,39 @@ updated: 2026-08-23
 proposals: [2026-08-23-validate-strangers-will-tip]      # vision cites proposals
 ---
 ```
+
+```yaml
+---
+title: Claims ledger
+updated: 2026-08-24
+research: [2026-08-24-narrated-deck-production-pricing]  # pitch cites research
+---
+```
+
+`pitch` cites `research` rather than `decisions`, and that is what makes the `RESEARCHED` tag
+structural: a claim sourced from outside the repository has to point at a dated scan carrying
+a staleness horizon, not at a URL in prose. **Optional directory**, like `rounds`.
+
+### The claims ledger row format
+
+`docs/pitch/claims.md` is machine-read. A claim is a table row whose first cell is a `C-NNN`
+id, and the validator parses exactly that shape:
+
+```markdown
+| id | claim | tag | citation |
+|---|---|---|---|
+| C-001 | 96 test cases exist | `EXTRACTED` | `tests/` file list, re-runnable |
+| C-002 | Completion runs far higher with subtitles | `RESEARCHED` | [2026-08-24-pitch-video-format-and-distribution](../research/2026-08-24-pitch-video-format-and-distribution.md) |
+| C-003 | The founder can deliver this | `ASSERTED` | nothing independent backs it |
+```
+
+Enforced per row: the id is unique, and the row carries **exactly one** of `` `EXTRACTED` ``
+`` `RESEARCHED` `` `` `ASSERTED` `` `` `CHECKED` `` as an inline-code span — untagged is an
+error, two tags a warning (legitimate only for a composite built from rows already in the
+ledger, counting convention declared beside it). A round's `claims:` list resolves against
+these ids, which is what turns *"a turn may only claim what the ledger holds"* from a rule
+someone remembers into a check. Prose between tables is ignored; only `| C-NNN |` rows are
+parsed.
 
 Frontmatter is **optional** — prose is welcome without it. There is no `id`: the filename is
 the handle, and these are names rather than events. When frontmatter is present, every cited
