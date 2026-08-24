@@ -127,11 +127,17 @@ def main():
     # The theme is generate-once and lives beside the script. Absent is fine --
     # a round without a bed is a round without a bed, not an error.
     theme = Path(args.theme) if args.theme else script.parent / "theme.mp3"
+    theme_loops = 1
     if not theme.exists():
         theme = None
     elif probe(theme) < measured_audio:
-        sys.exit(f"theme is {probe(theme):.1f}s but the narration is {measured_audio:.1f}s -- "
-                 f"regenerate it longer with music.py --seconds")
+        # Loop rather than demand a longer theme. The theme is generate-once by
+        # design; regenerating it at full-mode length would cost roughly six
+        # times as much AND come back a different piece of music, which defeats
+        # the point of having a theme. A 100s bed under a ten-minute pitch is
+        # exactly what looping is for.
+        import math
+        theme_loops = math.ceil(measured_audio / probe(theme))
 
     # slides grouped by the segment named in their storyboard row
     by_seg = {}
@@ -215,6 +221,11 @@ def main():
             # never to bury a consonant is inaudible in the gaps; ducking lets
             # it breathe between sentences and step back under speech, which is
             # what makes it read as a theme rather than as noise.
+            if theme_loops > 1:
+                # -stream_loop repeats the input; the atrim below cuts it to
+                # length. A hard loop point is audible in isolation and is not
+                # at 16 dB under a voice -- worth knowing rather than hiding.
+                cmd += ["-stream_loop", str(theme_loops - 1)]
             cmd += ["-i", str(theme)]
             # Loudness-normalise the bed rather than applying a fixed gain.
             # A generated theme has its own dynamics -- a sparse fade-in, then
@@ -234,9 +245,14 @@ def main():
                 "[voice][ducked]amix=inputs=2:duration=first:normalize=0[a]"
             )
             cmd += ["-filter_complex", filt, "-map", "0:v", "-map", "[a]"]
+        # -t, not -shortest. The concat demuxer needs the last image repeated to
+        # flush its final frame, and that repeat carries no duration -- so the
+        # video stream runs past the audio and -shortest did not reliably cut
+        # it back. A 570s narration came out as a 589s file. The measured
+        # narration length is the output length, stated rather than inferred.
         cmd += ["-vf", vf, "-c:v", "libx264", "-preset", "medium",
                 "-crf", "20", "-r", "30", "-c:a", "aac", "-b:a", "192k",
-                "-shortest", "-movflags", "+faststart", str(out)]
+                "-t", f"{measured_audio:.3f}", "-movflags", "+faststart", str(out)]
         print("\nencoding...")
         r = subprocess.run(cmd, capture_output=True, text=True)
         if r.returncode != 0:

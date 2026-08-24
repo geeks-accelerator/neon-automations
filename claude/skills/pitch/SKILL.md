@@ -387,7 +387,11 @@ in the ledger, not billed to backers.
     | | ~2-min turn script | ~10-min full script |
     |---|---|---|
     | characters | ~1,300 | **~10,000** |
-| measured seconds | **80.9** *(242 words, ~179 wpm)* | unmeasured — the 150 wpm figure below is an estimate |
+| measured seconds | **80.9** *(242 words, ~179 wpm)* | **570.0** *(1,568 words, ~165 wpm)* |
+
+**The rate is not a constant with a better value.** The same voice read the round script at 179
+wpm and the long form at 165 — it depends on the prose as well as the speaker, so 150 wpm was
+wrong by 20% in one direction and 10% in the other. Render, then publish what it measured.
     | credits per render | ~1,300 | **~10,000** |
     | renders in a 30,000-credit Starter month | ~23 | **3** |
     | renders in a 100,000-credit Creator month | ~76 | **10** |
