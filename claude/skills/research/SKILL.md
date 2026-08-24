@@ -59,6 +59,7 @@ trustworthy — not how long the document stays interesting.
 | `pricing` | 90d | API costs, subscription tiers, unit economics |
 | `landscape` | 180d | competitors, prior art, what already exists |
 | `format` | 180d | content and production conventions, what holds attention |
+| `distribution` | 180d | channel mechanics, community rules, reachable audience |
 | `regulation` | 365d | securities, licensing, terms of service |
 | `metrics` | 7d | numbers from our own systems |
 

@@ -65,6 +65,7 @@ RESEARCH_MODES = {
     "pricing":    (90,  "API costs, subscription tiers, unit economics"),
     "landscape":  (180, "competitors, prior art, what already exists"),
     "format":     (180, "content and production conventions, what holds attention"),
+    "distribution": (180, "channel mechanics, community rules, reachable audience"),
     "regulation": (365, "securities, licensing, terms of service"),
     "metrics":    (7,   "numbers from our own systems"),
 }
