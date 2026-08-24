@@ -126,6 +126,7 @@ mode: format
 conducted: 2026-08-24
 sources: [https://example.com/a, https://example.com/b]
 answers: [distribution-and-audience-floor]   # optional; closes an open question
+opens: [a-gap-this-scan-surfaced]            # optional; raises one, gates preflight
 supersedes: [2026-05-01-earlier-scan]   # optional
 ---
 ```

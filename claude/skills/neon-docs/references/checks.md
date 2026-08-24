@@ -30,6 +30,7 @@ Derived from the source; if the two disagree, the source is right and this file 
 | Research `mode` is a known mode | error | add it to `RESEARCH_MODES` if it is a genuinely new kind of fact |
 | Research `current` with no `sources` | warn | research nobody can re-check is an assertion |
 | Research `current` with no `mode` | warn | staleness cannot be checked without one |
+| A scan that `opens:` and `answers:` the same slug | error | a question raised and closed in one document was never open |
 
 ## Cross-references — all must resolve
 
@@ -103,6 +104,7 @@ All three block with a non-zero exit; the last two fail neither an ordinary run 
 |---|---|
 | Any validation error | fix it first — a gate that passes on a broken tree is no gate, and "preflight clean" must never be printable over a tree the plain run rejects |
 | Open `needs_research` with no answering scan | write a scan whose `answers:` lists the slug, or drop the need if it stopped mattering |
+| A `current` scan's `opens:` slug with no answering scan | same — a gap a scan surfaced gates until chased or dropped |
 | A `current` scan past its mode's horizon | re-run that mode and supersede, or set `status: superseded` |
 
 An answering scan must be `current` — a superseded scan's `answers:` no longer count,

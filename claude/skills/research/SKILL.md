@@ -36,6 +36,18 @@ percentages are directional rather than precise.
 
 **An absence of evidence is a finding.** It tells the next reader the ground was covered.
 
+**And when that absence would change a decision, declare it** — prose is invisible to a
+gate. A "not found" paragraph creates no obligation on anyone, and one written here sat
+unread while `--preflight` reported clean, long enough for a deck to be planned on research
+aimed at the wrong audience:
+
+```yaml
+opens: [what-converts-for-small-dollar-backers]
+```
+
+That blocks `--preflight` exactly like a record's `needs_research`, until some scan
+`answers:` it.
+
 But it deserves care, because it is where research most easily becomes advocacy: **an empty
 niche is equally consistent with an opportunity and with the thing not working.** Say so
 when you cannot distinguish them, rather than implying the flattering reading. A scan that
@@ -74,6 +86,16 @@ scan becomes checkable without touching any caller.
 **Scan one mode at a time.** A record answering a single kind of question can be superseded
 on its own schedule; a scan mixing pricing and landscape expires on the shorter horizon and
 drags fresh findings into a re-run with it.
+
+## Opening one
+
+`opens:` is for a gap this scan surfaced but did not chase — adjacent, out of scope, or only
+visible once the findings were in front of you. It is the honest alternative to widening the
+scan, which costs every later reader looking for the answer you were actually asked for.
+
+A superseded scan opens nothing: an expired gap should not gate, and if it still matters the
+scan replacing it will raise it again. A scan may not `opens:` and `answers:` the same slug —
+a question raised and closed in one document was never open.
 
 ## Closing an open question
 
