@@ -20,6 +20,53 @@ into the files. Two rules follow from that guide and both are load-bearing:
 import os
 import re
 
+INDEX_BEGIN, INDEX_END = "<!-- index:begin -->", "<!-- index:end -->"
+INDEX_RE = re.compile(re.escape(INDEX_BEGIN) + r".*?" + re.escape(INDEX_END), re.S)
+
+# Directory READMEs are signposts, not convention documents. The conventions live
+# in SKILL.md, in one place; a README that restates them is a second copy that
+# drifts. What a README owes a reader is: what lands here, how to move through it,
+# and what is currently in it.
+#
+# All three are generated, so the duplication that would otherwise accumulate
+# across projects cannot happen -- there is one definition and N renderings.
+# Anything written below the generated block is preserved, so a project can add
+# notes of its own without fighting the tool.
+DIRECTORY_DOC = {
+    "proposals": ("the tipped backlog",
+        "Units of work the community can tip. Tips set the order the agent works in."),
+    "plans": ("implementation detail",
+        "How an approved proposal gets built. Every plan names the proposal it serves."),
+    "issues": ("reported defects",
+        "Something is broken or behaves unintendedly. Wanted work is a proposal, not an issue."),
+    "observations": ("codified learnings",
+        "Things that surprised us or cost debugging time, so the next agent does not repeat them."),
+    "decisions": ("the ledger",
+        "Non-obvious, hard-to-reverse choices, with what they cost."),
+    "research": ("what was true when we looked",
+        "External facts a choice turns on, dated so the ground cannot shift under a decision."),
+    "architecture": ("the synthesis",
+        "How the system works today, derived from the records that produced it."),
+    "vision": ("future state",
+        "Where this is going. Not commitments."),
+}
+
+HOW_TO_READ = {
+    "events": ("**Newest first.** Every file is dated and nothing here is rewritten, so an old "
+               "record still says what it said. Check `status` before relying on one — "
+               "retired records stay in place on purpose, and the trail of what was rejected "
+               "is usually the most useful thing here."),
+    "research": ("**Newest first, and mind the status.** A `superseded` scan is not wrong, it is "
+                 "*expired* — read it when auditing why a past decision looked sensible, never "
+                 "when you want current facts. For those, take the newest `current` scan."),
+    "decisions": ("**Newest first, then follow `supersedes` backwards.** A superseded decision is "
+                  "kept unedited because the reasoning that stopped holding is the part worth "
+                  "reading. The chain is the history of how thinking changed."),
+    "living": ("**These are rewritten in place, so what you see is what is currently true.** "
+               "There are no dates in the filenames for that reason. Git holds what they used "
+               "to say."),
+}
+
 PARENT_BEGIN, PARENT_END = "<!-- nav:parent -->", "<!-- /nav:parent -->"
 NAV_BEGIN, NAV_END = "<!-- nav -->", "<!-- /nav -->"
 PARENT_RE = re.compile(re.escape(PARENT_BEGIN) + r".*?" + re.escape(PARENT_END), re.S)
@@ -238,6 +285,71 @@ def render(path, kind, fm, doc_id, events, back, docs_root, is_readme, living_ci
     out.append(NAV_END)
     return parent, "\n".join(out)
 
+
+def render_readme(path, kind, docs_root, events, living_kinds, skill_rel):
+    """Generate a directory README: purpose, how to read it, and a live index."""
+    title, purpose = DIRECTORY_DOC[kind]
+    how = HOW_TO_READ.get(kind) or HOW_TO_READ["living" if kind in living_kinds else "events"]
+    is_living = kind in living_kinds
+
+    out = [INDEX_BEGIN, "", f"# {kind} — {title}", "",
+           f"**Parent:** [docs]({rel(path, os.path.join(docs_root, 'README.md'))})", "",
+           purpose, "", "## How to read this directory", "", how, "", "## Contents", ""]
+
+    d = os.path.dirname(path)
+    names = sorted((n for n in os.listdir(d) if n.endswith(".md") and n != "README.md"),
+                   reverse=not is_living)
+    if not names:
+        out.append("*Empty — nothing filed here yet.*")
+    elif is_living:
+        out += ["| document | updated |", "|---|---|"]
+        for n in names:
+            fm = _fm(os.path.join(d, n))
+            out.append(f"| [{n[:-3]}]({n}) | {fm.get('updated', '—')} |")
+    else:
+        col = "n" if kind == "observations" else "status"
+        out += [f"| date | record | {col} |", "|---|---|---|"]
+        for n in names:
+            fm = _fm(os.path.join(d, n))
+            date, slug = n[:10], n[11:-3]
+            out.append(f"| {date} | [{slug}]({n}) | {fm.get(col, '—')} |")
+    out += ["", f"Conventions, schema, and the validator: [neon-docs]({skill_rel}).",
+            "", INDEX_END]
+    return "\n".join(out)
+
+
+_FM_CACHE = {}
+
+
+def _fm(path):
+    if path not in _FM_CACHE:
+        try:
+            text = open(path, encoding="utf-8").read()
+            data = {}
+            if text.startswith("---\n"):
+                end = text.find("\n---", 3)
+                for line in text[4:end].split("\n"):
+                    if ":" in line and not line.startswith((" ", "\t")):
+                        k, _, v = line.partition(":")
+                        data[k.strip()] = v.strip().strip("'\"")
+            _FM_CACHE[path] = data
+        except OSError:
+            _FM_CACHE[path] = {}
+    return _FM_CACHE[path]
+
+
+def apply_readme(path, block, fix):
+    """Replace the generated block; preserve anything a project wrote below it."""
+    original = open(path, encoding="utf-8").read()
+    if INDEX_RE.search(original):
+        text = INDEX_RE.sub(lambda _: block, original, count=1)
+    else:
+        text = block + "\n"
+    if text == original:
+        return False
+    if fix:
+        open(path, "w", encoding="utf-8").write(text)
+    return True
 
 def apply(path, parent, nav, fix):
     """Insert or refresh the generated blocks. Returns True if the file was stale."""

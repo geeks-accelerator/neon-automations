@@ -410,6 +410,13 @@ def check_nav(data, fix):
                 continue
             path = os.path.join(d, name)
             is_readme = name == "README.md"
+            if is_readme:
+                skill_rel = os.path.relpath(
+                    os.path.join(ROOT, ".claude", "skills", "neon-docs", "SKILL.md"), d)
+                block = nav.render_readme(path, kind, DOCS, data, set(LIVING), skill_rel)
+                if nav.apply_readme(path, block, fix):
+                    stale.append(os.path.relpath(path, ROOT))
+                continue
             fm = {}
             if not is_readme:
                 fm, perr = parse_frontmatter(path)
@@ -432,6 +439,15 @@ def main():
     args = ap.parse_args()
 
     data = {kind: collect_events(kind) for kind in EVENTS}
+
+    # Regenerate before validating anything, or --fix cannot recover from its own
+    # output. A deleted record leaves a dangling link in the generated index; that
+    # link fails check_links; and gating regeneration on a clean run means the one
+    # command that would repair the index is the one refusing to run. Any generated
+    # artifact that is also validated has this shape -- fix first, then check.
+    if args.fix:
+        check_nav(data, True)
+
     check_strays()
     check_links()
     check_shared_block(args.fix)
