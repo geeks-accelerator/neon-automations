@@ -274,6 +274,10 @@ jobs:
       # an orphan under the same number and the assembler globs by number.
       - name: Stale slides are cleared, and ambiguity refuses
         run: |
+          # deck.py shells out to rsvg-convert. It is the one non-stdlib
+          # dependency in the pitch scripts besides ffmpeg, and it was
+          # documented only in an error message until CI went looking for it.
+          sudo apt-get update -qq && sudo apt-get install -y -qq librsvg2-bin
           S=claude/skills/pitch/scripts
           rm -rf /tmp/ps && mkdir -p /tmp/ps
           printf '| # | segment | layout | content |\n|---|---|---|---|\n| 1 | Hook | stat | 9\\| things |\n' > /tmp/ps/a.md

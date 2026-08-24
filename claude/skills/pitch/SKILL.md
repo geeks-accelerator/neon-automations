@@ -676,6 +676,11 @@ the full gate.
   Everything before the first `---` in an outline is **preamble** and is not sent — that is
   where the file's own title and its segment→timing mapping live.
 
+**Binary dependencies.** The scripts are stdlib-only in Python, but three shell out:
+`deck.py` needs **`rsvg-convert`** (`brew install librsvg` / `apt install librsvg2-bin`), and
+`render.py` and `assemble.py` need **`ffmpeg`** and **`ffprobe`**. Every `--dry-run` path is
+free of all three, which is what lets CI check the parsers on a bare runner.
+
 - **Assembly.** `assemble.py` times slides from the **measured** per-segment audio, never the
   storyboard's targets. Captions burn in for image-only decks; a Gamma deck already carries its
   text, so captions there duplicate the slide and collide with it — use `--no-captions`.
