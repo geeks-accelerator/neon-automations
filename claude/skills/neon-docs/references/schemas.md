@@ -82,6 +82,14 @@ status: open
 severity: medium
 opened: 2026-08-23
 observation: 2026-08-24-postgrest-url-length-cap  # optional; set when closing
+```
+
+All cross-reference fields resolve **within the repo only**. A project-level record caused by
+a registry-level pattern — or the reverse — has to be linked by URL in prose, since the
+validator cannot see the other repo. That link is unchecked, which is the cost of the scope
+split.
+
+```yaml
 ---
 ```
 
