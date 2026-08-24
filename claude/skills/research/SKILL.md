@@ -1,6 +1,6 @@
 ---
 name: research
-description: Conduct an external research pass and file it as a dated, sourced record that decisions can cite. Use this skill whenever a choice turns on facts from outside the codebase — pricing, a regulation, what a competitor does, what a format costs, whether an approach is already taken — and whenever `validate.py --preflight` reports an open question. Also use it when asked to "look into", "find out", "check what X costs", "see if anyone else is doing this", or to resolve something a proposal or plan says it cannot answer yet. Reach for it before writing a decision that rests on external facts, not after.
+description: Conduct an external research pass and file it as a dated, sourced record that decisions can cite. Use this skill whenever a choice turns on facts from outside the codebase — pricing, a regulation, what a competitor does, what a format costs, whether an approach is already taken — and whenever `validate.py --preflight` reports an open question or a stale scan. Also use it when asked to "look into", "find out", "check what X costs", "see if anyone else is doing this", or to resolve something a proposal or plan says it cannot answer yet. Reach for it before writing a decision that rests on external facts, not after.
 ---
 
 # research

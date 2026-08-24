@@ -32,8 +32,11 @@ cd ../  # the registry
 python3 .claude/skills/neon-docs/scripts/validate.py --fix
 ```
 
-CI here runs the same thing against `tests/fixture/`, including an idempotence check and a
-negative test. Keep the fixture minimal; it is the only executable spec of the validator.
+CI here runs the same thing against `tests/fixture/`: warning-free validation, a clean
+preflight, an idempotence check, a broken-tree rejection (plain **and** preflight), a
+dynamic open-question gate test with the clock injected at runtime, and a check that every
+research mode the validator defines is documented in the skill docs. Keep the fixture
+minimal; it is the only executable spec of the validator.
 
 ## Commits are SSH-signed
 

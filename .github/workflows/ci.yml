@@ -44,8 +44,71 @@ jobs:
           cd tests/fixture && python3 ../../claude/skills/neon-docs/scripts/validate.py --fix
           git diff --exit-code -- tests/fixture
 
-      - name: Validator rejects a broken tree
+      - name: Validator rejects a broken tree, and so does preflight
         run: |
           cp -R tests/fixture /tmp/broken
           sed -i 's/^id: 2026-01-01-example-decision$/id: wrong-id/' /tmp/broken/docs/decisions/2026-01-01-example-decision.md
-          cd /tmp/broken && python3 $GITHUB_WORKSPACE/claude/skills/neon-docs/scripts/validate.py && exit 1 || echo "rejected, as it should"
+          cd /tmp/broken
+          python3 $GITHUB_WORKSPACE/claude/skills/neon-docs/scripts/validate.py && exit 1 || echo "plain run rejected, as it should"
+          # regression for the bug where preflight printed "clean" over a tree
+          # the plain run rejects -- a gate that passes on a broken tree is no gate
+          python3 $GITHUB_WORKSPACE/claude/skills/neon-docs/scripts/validate.py --preflight && exit 1 || echo "preflight blocked too"
+
+      # The open-question gate, exercised end to end. The answering scan is dated
+      # at runtime rather than committed, because a current scan with a fixed
+      # date rots as the wall clock crosses its horizon -- the clock is injected,
+      # per docs/observations/2026-08-24-time-based-checks-and-static-fixtures-conflict
+      # in the registry.
+      - name: Preflight gate blocks an open question and clears on an answer
+        run: |
+          cp -R tests/fixture /tmp/pfgate && cd /tmp/pfgate
+          sed -i 's/^status: approved$/status: approved\nneeds_research: [example-question]/' docs/proposals/2026-01-01-example-proposal.md
+          python3 $GITHUB_WORKSPACE/claude/skills/neon-docs/scripts/validate.py --preflight && exit 1 || echo "open question blocked"
+          TODAY=$(date +%F)
+          cat > docs/research/$TODAY-answer-scan.md <<EOF
+          ---
+          id: $TODAY-answer-scan
+          title: Answers the example question
+          status: current
+          mode: landscape
+          conducted: $TODAY
+          sources: [https://example.com]
+          answers: [example-question]
+          ---
+
+          # Answers the example question
+
+          ## Findings
+
+          A sourced claim.
+
+          ## Implications
+
+          An inference.
+          EOF
+          sed -i 's/^          //' docs/research/$TODAY-answer-scan.md
+          python3 $GITHUB_WORKSPACE/claude/skills/neon-docs/scripts/validate.py --fix >/dev/null
+          python3 $GITHUB_WORKSPACE/claude/skills/neon-docs/scripts/validate.py --preflight
+
+      # The mode table is duplicated into the skill docs, which is a drift
+      # surface of exactly the class the shared-block check exists for. The
+      # validator is authoritative; the docs must mention every mode it defines.
+      - name: Research modes documented everywhere they are claimed
+        run: |
+          python3 - <<'PY'
+          import ast, io, sys
+          tree = ast.parse(io.open("claude/skills/neon-docs/scripts/validate.py").read())
+          modes = None
+          for node in ast.walk(tree):
+              if isinstance(node, ast.Assign) and getattr(node.targets[0], "id", "") == "RESEARCH_MODES":
+                  modes = sorted(ast.literal_eval(node.value))
+          assert modes, "RESEARCH_MODES not found"
+          bad = []
+          for f in ("claude/skills/research/SKILL.md",
+                    "claude/skills/neon-docs/references/schemas.md"):
+              doc = io.open(f).read()
+              bad += [(f, m) for m in modes if f"\x60{m}\x60" not in doc]
+          for f, m in bad:
+              print(f"::error::{f} does not document mode {m!r}")
+          sys.exit(1 if bad else 0)
+          PY

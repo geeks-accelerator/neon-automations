@@ -629,6 +629,16 @@ def main():
         warn(path, f"{mode} research is {age}d old against a {horizon}d horizon")
 
     if args.preflight:
+        # A gate that passes on a broken tree is no gate. Preflight exists to be
+        # the last check before committing to a public position, so validation
+        # errors block it too -- otherwise "preflight clean" could be printed
+        # over a tree the plain run rejects, and the phrase would mean nothing.
+        if errors:
+            for e in errors:
+                print(f"  ERROR {e}")
+            print(f"\npreflight blocked -- {len(errors)} validation error(s) to fix first")
+            return 1
+
         # Staleness warns on ordinary runs and blocks here. A build that breaks
         # because a date passed, with nothing changed, is a bad CI signal -- but
         # committing to a public position on numbers that expired is worse, and

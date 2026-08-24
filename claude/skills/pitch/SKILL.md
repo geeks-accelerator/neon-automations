@@ -1,6 +1,6 @@
 ---
 name: pitch
-description: Produce a round's pitch — script, narration, slides, assembled video, and the itemized ask — and post it. Use this skill whenever asked to make a pitch, pitch deck, pitch video, round video, or funding ask for a project, or to open or close a turn of the funding loop. It begins by running the research preflight and stops if open questions remain, so reach for it at the start of pitch work rather than after the deck exists. Also use it when asked "what goes in the pitch", "how long should the video be", or "what should we ask for".
+description: Produce a round's pitch — script, narration, slides, assembled video, and the itemized ask — and post it. Use this skill whenever asked to make a pitch, pitch deck, pitch video, round video, or funding ask for a project, or to open or close a turn of the funding loop. It begins by running the research preflight and stops if open questions, stale research, or validation errors remain, so reach for it at the start of pitch work rather than after the deck exists. Also use it when asked "what goes in the pitch", "how long should the video be", or "what should we ask for".
 ---
 
 # pitch
@@ -19,7 +19,9 @@ with the ask itemized from real costs.
 python3 .claude/skills/neon-docs/scripts/validate.py --preflight
 ```
 
-**Non-zero exit means stop.** It reports two things, and both block:
+**Non-zero exit means stop.** It blocks on three things:
+
+- **Validation errors** — a broken tree gates everything else; fix it first.
 
 - **Open questions** — a record has declared something it cannot answer that would change
   what the pitch says.

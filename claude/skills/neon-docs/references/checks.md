@@ -86,12 +86,16 @@ false-positive. Warning rather than error because GitHub synthesizes PR merge re
 
 ## `--preflight` only
 
-Both block with a non-zero exit; neither fails an ordinary run or CI.
+All three block with a non-zero exit; the last two fail neither an ordinary run nor CI.
 
 | check | remedy |
 |---|---|
+| Any validation error | fix it first — a gate that passes on a broken tree is no gate, and "preflight clean" must never be printable over a tree the plain run rejects |
 | Open `needs_research` with no answering scan | write a scan whose `answers:` lists the slug, or drop the need if it stopped mattering |
 | A `current` scan past its mode's horizon | re-run that mode and supersede, or set `status: superseded` |
+
+An answering scan must be `current` — a superseded scan's `answers:` no longer count,
+because an expired answer is not an answer.
 
 Staleness warns on ordinary runs and blocks here. A build that breaks because a date passed,
 with nothing changed, is a bad CI signal — but committing publicly to expired numbers is
