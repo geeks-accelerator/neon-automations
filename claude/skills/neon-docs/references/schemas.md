@@ -1,8 +1,9 @@
 # Frontmatter schemas
 
-Every file in `docs/proposals`, `docs/plans`, `docs/issues`, `docs/observations`, and every
-ADR in `docs/architecture` opens with YAML frontmatter. `scripts/validate.py` enforces what
-follows.
+Every file in the event directories — `docs/proposals`, `docs/plans`, `docs/issues`,
+`docs/observations`, `docs/research`, `docs/decisions` — opens with YAML frontmatter, as do
+frontmatter-carrying files in `docs/architecture` and `docs/vision`. `scripts/validate.py`
+enforces what follows; the full check list with remedies is in [checks.md](checks.md).
 
 **Events** (`decisions` `issues` `proposals` `plans` `observations` `research`) are named
 **`YYYY-MM-DD-lowercase-slug.md`**, and the filename stem *is* the id. The directory carries
@@ -121,6 +122,7 @@ instance; wait for recurrence before writing "always".
 id: 2026-08-24-narrated-deck-formats
 title: Human-readable title
 status: current
+mode: format
 conducted: 2026-08-24
 sources: [https://example.com/a, https://example.com/b]
 answers: [distribution-and-audience-floor]   # optional; closes an open question
@@ -129,6 +131,13 @@ supersedes: [2026-05-01-earlier-scan]   # optional
 ```
 
 **status:** `current` · `superseded`
+
+**mode:** `pricing` · `landscape` · `format` · `distribution` · `regulation` · `metrics`
+
+The mode sets how long the scan stays trustworthy — 90 days for pricing, 180 for landscape,
+format and distribution, 365 for regulation, 7 for our own metrics. Past that it warns on
+every run and blocks `--preflight`. Modes live in `RESEARCH_MODES` in the validator; adding
+one is an edit to that table and nothing else.
 
 `sources` is warned on if absent from a `current` scan. Supersede rather than edit — a
 decision that cited this must keep pointing at what it actually said.

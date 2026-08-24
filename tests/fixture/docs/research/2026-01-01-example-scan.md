@@ -1,7 +1,8 @@
 ---
 id: 2026-01-01-example-scan
 title: An example scan
-status: current
+status: superseded
+mode: pricing
 conducted: 2026-01-01
 sources: [https://example.com]
 ---
@@ -28,6 +29,6 @@ An inference, labelled as such.
 
 ## Next
 
-Current. When the world moves, write a new scan that supersedes this one rather than editing it.
+Superseded by newer research. Kept unedited -- decisions were made on what it said at the time, and rewriting it would strand their reasoning.
 
 <!-- /nav -->

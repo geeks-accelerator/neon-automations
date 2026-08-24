@@ -75,12 +75,46 @@ decks, and a human carries the story in a way a mechanism does not.
 
 ## Step 5 — set the success threshold before posting
 
-A number that would count as **failure**, written down first. A completion rate against a
-stated audience size is meaningful; a view count is not.
+**Two experiments, and one turn can only answer one of them.**
 
-Set after posting, it cannot fail — and an experiment that cannot fail cannot succeed either.
+- **Watchability** — does the artifact hold attention? Needs ~30 video **starts**, from any
+  source.
+- **Distribution** — can this reach strangers at scale? Needs ranking luck, a warm audience,
+  and repetition across turns.
+
+Conflating them is what makes a null result uninterpretable: with no audience you cannot tell
+an uninteresting artifact from an empty room. Test watchability per turn; let distribution
+accumulate.
+
+**The floor is 30 starts**, because that is where a 95% interval around a 40% completion rate
+excludes 15%, making *holds attention* and *does not* distinguishable. Fifty is comfortable;
+ten tells you nothing. The unit is **starts**, not impressions or views — at a 1–3% link CTR,
+30 starts implies 1,000–3,000 impressions.
+
+A workable default: **≥30 starts with ≥40% completion passes; ≤15% fails; between them is
+inconclusive and the turn repeats.**
+
+Write it down first. A threshold chosen after seeing the result is not a threshold, and an
+experiment that cannot fail cannot succeed either.
 
 ## Step 6 — post, ask, and open the next turn
+
+**Take the measurable sample from a direct ask.** Thirty to fifty people reachable
+personally who agree to watch. This is not distribution and must not be reported as such —
+but it is the only route that guarantees the sample without ranking luck, and the modal cold
+launch does not produce one. A median Show HN scores 2 points; most Product Hunt launches get
+0–2 upvotes and are not seen.
+
+**Do not spend the one-shot channels on an unproven artifact.** `SHOW IH` is once per
+product, Show HN reposts are discouraged, Product Hunt is one real launch. All three are
+non-renewable, and all three are worth more spent on something already known to hold
+attention — which is exactly what these early turns exist to determine. Hold them for the
+launch round.
+
+**Early turns go to repeatable surfaces** — X `#buildinpublic` and similar, which cost
+nothing to repeat and compound. Every source on build-in-public says to build the audience
+before launching; the cadence *is* that warm-up, so the first turns are building the audience
+a later turn will need rather than testing whether one exists.
 
 File the round's record, then run the full validator so navigation and directory indexes
 pick it up:

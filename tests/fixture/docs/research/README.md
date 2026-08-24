@@ -14,7 +14,7 @@ External facts a choice turns on, dated so the ground cannot shift under a decis
 
 | date | record | status |
 |---|---|---|
-| 2026-01-01 | [example-scan](2026-01-01-example-scan.md) | current |
+| 2026-01-01 | [example-scan](2026-01-01-example-scan.md) | superseded |
 
 Conventions, schema, and the validator: [neon-docs](https://github.com/geeks-accelerator/neon-automations/blob/main/claude/skills/neon-docs/SKILL.md).
 

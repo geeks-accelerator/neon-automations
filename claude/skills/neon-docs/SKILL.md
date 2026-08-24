@@ -13,8 +13,12 @@ breaks a running system rather than merely annoying a reader.
 ## Before committing anything under docs/
 
 ```bash
-python3 .claude/skills/neon-docs/scripts/validate.py
+python3 .claude/skills/neon-docs/scripts/validate.py --fix
 ```
+
+Every check it performs, with the remedy for each, is in
+[`references/checks.md`](references/checks.md). Read that when a run fails and the message
+alone is not enough.
 
 Exit 0 is clean. Run it after every change — the failures it catches (a plan pointing at a
 proposal that does not exist, an id that disagrees with its filename, a filename date that
@@ -257,6 +261,33 @@ and stops.
 This tooling lives in a **public** repo, so CI fetches it with no credential. It was
 private and symlinked from the registry until that cost two rounds of token debugging for a
 docs validator; making it public turned a standing secret into a `git clone`.
+
+## Links that cross a repo boundary
+
+A relative link that crosses a **symlink** or reaches **into a submodule** resolves on disk
+and 404s for anyone reading on GitHub — the web UI renders a symlink as a text blob and does
+not follow deep paths into a submodule. The validator errors on both.
+
+**Link the target repo's URL instead.** This applies to anything pointing at
+`.claude/skills/...` (a symlink) or at another project's docs from the registry (a
+submodule).
+
+The general form is worth carrying: a link checker validates a filesystem, but readers
+navigate a rendering, and the two diverge wherever the rendering does not follow the
+filesystem's indirections.
+
+## Signing
+
+Commits are SSH-signed and the config is **repo-local**, which means a fresh clone or a newly
+added submodule inherits none of it — and git does not warn when signing is simply not
+configured. The validator warns when `HEAD` is unsigned in a repo that ships
+`.allowed_signers`, since shipping that file is the declaration that signing is expected
+here.
+
+```bash
+git config gpg.format ssh && git config user.signingkey ~/.ssh/id_ed25519.pub \
+  && git config commit.gpgsign true
+```
 
 ## Registry level or project level
 

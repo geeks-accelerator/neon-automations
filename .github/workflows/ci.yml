@@ -27,8 +27,17 @@ jobs:
             grep -q '^name:' "$f" && grep -q '^description:' "$f" || { echo "missing name/description: $f"; exit 1; }
           done
 
-      - name: Validator passes on the fixture
-        run: cd tests/fixture && python3 ../../claude/skills/neon-docs/scripts/validate.py
+      # Zero warnings, not just zero errors. A fixture that warns teaches readers
+      # that warnings are normal, which is how a warning stops being a signal.
+      - name: Validator passes on the fixture with no warnings
+        run: |
+          cd tests/fixture
+          out=$(python3 ../../claude/skills/neon-docs/scripts/validate.py)
+          echo "$out"
+          echo "$out" | grep -q "clean (0 warning" || { echo "::error::fixture is not warning-free"; exit 1; }
+
+      - name: Preflight is clean on the fixture
+        run: cd tests/fixture && python3 ../../claude/skills/neon-docs/scripts/validate.py --preflight
 
       - name: Fix is idempotent on a clean tree
         run: |
