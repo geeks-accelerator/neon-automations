@@ -123,6 +123,28 @@ fifth.*
 - `RESEARCHED` splits into independent and self-verifying. Fetching our own live endpoint is
   not market research.
 
+## Disclose what the machine made
+
+**A major reward platform now carries a use-of-AI section by structure**, alongside risks and
+environmental commitment — creators name which parts of the work were machine-made. That is a
+convention arriving in the genre, not a preference, and it lands on this procedure harder than
+on most: the slides are generated or typeset by script, the narration is TTS, and the theme is
+model-generated. **A pitch produced this way and silent about it is making the exact kind of
+unmarked claim the four tags exist to prevent**, in the one place a reader is least able to
+check.
+
+The disclosure is a *line in the pitch*, not a footnote on the page, and it names the parts:
+script written by a human or drafted by a model, narration synthetic or recorded, slides
+generated or typeset, music generated. Say which, in the index and on the published page.
+
+**For this project the disclosure is the pitch.** The premise is agent-built software. A
+reader who discovers the narration is synthetic after being told nothing has learned that the
+pitch conceals what the product *is* — the concealment costs more than the fact. That the
+convention now exists removes the last argument for being coy about it.
+
+**This is a claim like any other, so it gets a tag.** *The narration is synthetic* is
+`EXTRACTED` — a file exists and a script produced it.
+
 ## The ledger invariant
 
 **A turn pitch may not make a claim that is not in `docs/pitch/claims.md`.** New claims get
@@ -163,6 +185,18 @@ full — riskiest assumption `strangers-will-tip` was answered at T=4
    mode produces* — its length, order, audience, or output shape — the standing pitch was built
    to a procedure that no longer exists, and no amount of ledger freshness fixes that.
 
+7. **The evidence changed.** A new or superseded scan in a mode the pitch cites, and any
+   new `regulation`-mode scan regardless of what cites it — what may lawfully be offered
+   bounds every ask in the tree. Triggers 1–6 all watch the *project* or the *procedure*;
+   none watches the research the pitch is built on, so a scan can land that contradicts a
+   live claim while mode derivation reports no trigger.
+
+**Trigger 7 was found the same way trigger 6 was.** On 2026-08-24 an 80-video corpus
+produced three scans — `writing-the-ask-practitioner-video`, `non-accredited-offering-pathways`,
+`crowdfunding-platform-mechanics` — one of them concluding that a public ask to strangers for
+small amounts may be unavailable under either Reg D branch. No trigger fired. Mode derivation
+would have said *"turn — no trigger fired"* over research that changes what the pitch may say.
+
 **Trigger 6 was found by needing it.** The re-run that introduced the ~10-minute investor-order
 script fired none of triggers 1–5: the tree existed, no assumption had resolved, nothing had
 been demoted, no turns had elapsed, and the docs and code did not disagree. Mode derivation
@@ -174,6 +208,7 @@ procedure in force the day it was first run.
 
 ```bash
 python3 .claude/skills/neon-docs/scripts/validate.py --preflight
+python3 .claude/skills/pitch/scripts/scans.py --docs docs --since <last full's SHA>
 ```
 
 **Non-zero exit means stop.** It blocks on validation errors, open questions, and research past
@@ -265,6 +300,27 @@ Full mode is that consumer. When a scan gets scope-noted rather than superseded,
 statement that it was applied to the wrong audience — so the question to ask next is *which
 audience is it right for, and does anything here serve them?* A scope note with no answer to
 that is a scan quietly retired without being marked retired.
+
+**And it recurred, so the check is now mechanical.** `scans.py` walks every `current` scan and
+reports what outside `docs/research/` actually names it:
+
+```bash
+python3 .claude/skills/pitch/scripts/scans.py --docs docs
+```
+
+Two rules in it were each found by getting them wrong first.
+
+- **A scan's own `Cited by:` line is not evidence.** It is a hand-maintained backlink and it
+  drifts in both directions — on the tree this was written against, three scans with real
+  consumers carried no backlink at all. Read the tree, not the claim about the tree.
+- **A sibling scan is not a consumer.** Scans cross-reference each other, so a batch published
+  together cites itself into apparent coverage. Three scans landed on 2026-08-24 citing only
+  each other, and a backlink check called them consumed. The question is whether research
+  reaches the *pitch*; a citation that never leaves `docs/research/` has not.
+
+An uncited scan is **not an error** — a project may research what it has not pitched. Not
+knowing is the error. Answer each one: cite it, or write the *not applicable, because …* line
+in the index.
 
 ## Phases 3–5 — research, by citation
 
@@ -421,6 +477,12 @@ wrong by 20% in one direction and 10% in the other. Render, then publish what it
     is that the cost is a receipt. And expect the fixed point to fire: adding the row that
     records a numeric disagreement changes the ratio the index reports.
 
+    **Then the coverage pass, which is the arithmetic pass's mirror.** The arithmetic pass
+    asks whether every number the pitch states is supported. This asks the reverse: whether
+    every scan the tree holds reached the pitch. Run `scans.py`, and for each scan it names,
+    either cite it or record why it does not apply. Both passes exist because the tree can be
+    internally consistent and still be wrong about the world it was built from.
+
     **The index must lead with what a reader would be *for*.** It is what gets opened first and
     it drifts into an audit summary faster than the long form does.
 
@@ -494,6 +556,25 @@ being in a hurry.
 
 Itemize from real prices, publish the itemization, and carry over the Phase 6–7 rules above.
 
+**A milestone and a period, never a round label.** *"We're raising a seed round"* communicates
+nothing; the split is read as a statement of priorities, and a milestone-shaped ask can be
+reported against where a round-sized one cannot. The procedure that follows from it inverts
+which number is fixed: cost the milestone, sum what the reachable network could plausibly
+give, and **if the second is not comfortably larger, choose a cheaper milestone.** The plan is
+the variable, not the ask.
+
+**Say what a pledge buys, in one sentence, before anyone pledges.** Gift, purchase,
+contribution, or a claim on future value — the same words to every backer, written down before
+money moves. Ownership confusion is reported as real, arriving at any amount, and almost
+entirely preventable at this cost. It is also the boundary the regulation research turns on: a
+pledge buying participation resembles a reward or a gratuity, while a pledge buying a claim on
+future value switches on every securities constraint. **The sentence goes in the round record
+and on the published page**, not only in the mechanism doc.
+
+**Not legal advice, and the skill does not decide this.** It requires that the answer be
+written down and identical everywhere, which is the part that is free now and expensive after
+three rounds have each implied something different.
+
 **Budget gauge renders separately from ship takes.** They scale with **drafts, not takes** —
 the first run's script went through three drafts before it was cut to length, and under this
 procedure each of those renders. An ask that budgets "three takes" and then iterates five times
@@ -528,7 +609,7 @@ slides is not.
 | **Hook** — the problem, arrestingly | 0–8s |
 | **Problem** — why it is worth caring about | 8–30s |
 | **Solution** — show it; benefits paired to features | 30–90s |
-| **Ask** — what the money buys, itemized | final 10–15s |
+| **Ask** — one-sentence backstory, then what the money buys, itemized, then the cheapest next step | final 10–15s |
 
 **This is not the investor order, and that order is not wrong — it is full mode's.** Problem →
 solution → market → traction → business model → team → ask is researched for partners running
@@ -537,6 +618,32 @@ strangers deciding in ninety seconds, where the same order spends slides on mark
 (irrelevant to someone giving $10) and on traction and financials an early project does not
 have. Crowdfunding videos run 60–180 seconds; the most-cited failure is overcomplicating, so
 viewers leave before the ask.
+
+### The call to action is the cheapest next step, not the pledge
+
+The four-part order ends on the ask, and the reflex is to make that ask the pledge — the most
+expensive thing available. Practitioner sources converge the other way from two directions:
+the goal of a cold ask is **a reply, not a meeting**, and asking for the expensive thing first
+is named as *arguably the biggest mistake*; the substitute is a question that lets the reader
+choose the cheaper option.
+
+**This is not softening the ask. It is the fix for a measurement problem this procedure already
+has.** Step 5 records that with no audience you cannot tell an uninteresting artifact from an
+empty room — a null pledge count is uninterpretable. A cheap action produces signal in exactly
+that case, because people who will not pledge will still reply, reserve, or deposit.
+
+The cheapest real-money version is a **refundable one-dollar deposit**. One agency reports 20–40%
+of a deposit list converting at launch, and the mechanism is corroborated from an unrelated
+domain — a B2B pre-sell method whose core claim is that **payment changes the counterparty's
+behaviour**, at any size. Its equity-side analogue is legally sanctioned: *testing the waters*
+collects non-binding indications of interest and needs no platform.
+
+**Both deposit figures come from one interested source, so treat the rate as unmeasured here.**
+What transfers is the ordering — a cheap paid step before an expensive one — not the numbers.
+
+**And the buying signal is unsolicited advice.** When someone starts telling you how to improve
+the thing, they are committed; nobody advises a project they do not care about. That is a
+better read on a turn's comments than the pledge count.
 
 ### Sell participation, not features
 
@@ -547,6 +654,31 @@ above a physical product, far above a virtual one.
 The trap is drifting toward *virtual product* framing — access, credits, downloads — the least
 effective category and the first thing most people reach for. What a round sells is naming what
 gets built, watching it happen, and holding a claim on the ledger.
+
+### The founder story goes last, and the video does not open on your face
+
+The trust ladder is ranked so each rung substitutes for the one above: an undeniable clip,
+progress photos, an uncut workflow video, testimonials, domain authority, PR, past delivery,
+occupational authority. **A project with none of them still has the bottom rung — the story**,
+in three parts: you had the problem, you searched and each attempt failed, and here is what you
+committed. It does not prove delivery; it makes you a person with something at stake.
+
+**It goes last, after someone already wants the thing** — and the same finding says **do not
+open on your own face**: *"you are not at first the most enticing thing about your project."*
+Step 6's *put a face on it* is right about the founder segment and silent about its position;
+the position is the end.
+
+**Where it goes is an open conflict, not a solved one.** The Ask segment is 10–15 seconds and
+a three-part story does not fit in it — so the story either takes ~20s from **Solution**, or
+the turn video runs longer than 90s, or the story is cut to one sentence. The sources do not
+settle this: they say *last*, and they were describing campaign pages and longer videos, not a
+90-second cut.
+
+The reading recorded here: **at 90 seconds, one sentence at the top of the Ask** — *I had this
+problem, I tried X, here is what I committed* — and the full three-part version belongs on the
+page and in full mode's script, which has room for it. That is a judgement, not a finding, and
+the falsifier is a turn that reads the one-sentence version to no effect while a longer cut
+lands.
 
 ### Step 4b — render the audio, and listen to it
 
@@ -631,6 +763,18 @@ link CTR, 30 starts implies 1,000–3,000 impressions.
 Default: **≥30 starts with ≥40% completion passes; ≤15% fails; between them is `inconclusive`
 and the turn repeats.**
 
+**A turn needs a close, not only a threshold.** Funding is U-shaped — an opening spike, a
+dead middle, a closing spike — and **an open-ended ask has no closing spike because there is
+nothing to remind anyone about.** Reward campaigns run ~30 days. Write the close date into the
+round record with the threshold, and treat the final reminder as a planned step rather than an
+afterthought.
+
+**The measurement threshold and a funding threshold are different objects.** `threshold:`
+above is the *experiment* — does the artifact hold attention. A minimum-goal-or-refund is a
+*funding* rule, and its logic only holds under all-or-nothing: a round that keeps whatever it
+raises inverts the incentive the minimum was there to create. Decide which this round is and
+say so; do not let the two words share a field.
+
 **Write it into the round record's `threshold:` frontmatter field before posting.** A threshold
 chosen after seeing the result is not a threshold, and an experiment that cannot fail cannot
 succeed either. The record is an event for exactly this reason — and the field is enforced: a
@@ -654,7 +798,13 @@ the full gate.
   from T=2, one variable at a time.
 - **Put a face on it.** Trust is best built face-to-face, and the segment should read **calm,
   honest, grounded** — no shouting, no overacting. Cheapest version: a face for the founder
-  segment, stills for the rest.
+  segment, stills for the rest. **Not the opening** — see the trust ladder above.
+- **Audio over picture, and it is the one line with no cheaper substitute.** Three independent
+  sources rank it that way. It costs nothing while narration is TTS, and it becomes a real ask
+  line the moment Step 6's human ship take happens — a microphone is the purchase, not a
+  camera. Itemised benchmarks from the same sources, for sanity-checking an ask rather than
+  for copying: do-it-yourself $100–500, freelancer $1,000–5,000, agency $5,000–15,000. What
+  drives that number up is **explanation** — anything the audience must be taught.
 - **Theme.** `music.py` generates the bed **once**; `assemble.py` mixes it. A recurring show
   needs a recurring theme, and regenerating it throws away the sonic identity that makes a
   later episode recognisably the same series.
@@ -696,7 +846,9 @@ the full gate.
 **Binary dependencies.** The scripts are stdlib-only in Python, but three shell out:
 `deck.py` needs **`rsvg-convert`** (`brew install librsvg` / `apt install librsvg2-bin`), and
 `render.py` and `assemble.py` need **`ffmpeg`** and **`ffprobe`**. Every `--dry-run` path is
-free of all three, which is what lets CI check the parsers on a bare runner.
+free of all three, which is what lets CI check the parsers on a bare runner. `scans.py` needs
+neither — it reads the tree, and shells out to `git` only for `--since`, degrading to a printed
+note when there is no history to read.
 
 - **Assembly.** `assemble.py` times slides from the **measured** per-segment audio, never the
   storyboard's targets. Captions burn in for image-only decks; a Gamma deck already carries its
@@ -753,6 +905,26 @@ turns exist to determine. Hold them for the launch round.
 repeat and compound. Every source on build-in-public says to build the audience before
 launching; the cadence *is* that warm-up.
 
+## Step 7b — the update, which is the same document every time
+
+A round ends; the backers do not. The update between turns is a **format, not an occasion**,
+and its consistency is what makes movement visible:
+
+- **Bottom line up front, including the lowlights, quantified.** One page.
+- **Monthly or quarterly.** Weekly is too often to have anything to say, and is reported as the
+  fastest route to unsubscribes.
+- **Identical structure every time.**
+- **Repeat the elevator pitch.** Small backers forget what they backed.
+- **End with two or three specific asks.** An update with no ask trains people not to reply.
+
+The common founder error here is reported as **over-secrecy, not over-disclosure** — and honest
+disclosure early is what makes a bad month reportable later rather than a confession. This is
+free to adopt now and expensive to retrofit once backers have seen three different shapes.
+
+**The update is not a round record.** The record is an event and freezes; the update is
+correspondence. Where a project keeps them is its own call, but a threshold, a claim list, and a
+frozen script do not belong in a mailout, and a mailout does not get a `threshold:` field.
+
 Set the round's status, append the result when it arrives, then:
 
 ```bash
@@ -767,7 +939,8 @@ python3 .claude/skills/neon-docs/scripts/validate.py --fix
 
 ```
 docs/pitch/                       living, optional, rebuilt by full
-├── README.md                     index, the two numbers, staleness report †
+├── README.md                     index, the two numbers, staleness report, the
+│                                 AI disclosure, and the scan-coverage answers †
 ├── scan.md                       Phase 0 + the affirmative sweep
 ├── claims.md                     the ledger — load-bearing
 ├── one-liner.md
@@ -775,7 +948,7 @@ docs/pitch/                       living, optional, rebuilt by full
 │                                 every turn script is cut from
 ├── long-form.md                  the ~10-min full-mode script, investor order, narrated
 ├── what-exists-now.md            the five buckets
-├── the-ask.md
+├── the-ask.md                    itemized, milestone-shaped, and what a pledge buys
 ├── riskiest-assumptions.md
 ├── reactions.md                  Phase 3.5
 ├── deck-outline.md               gamma.py input — cards, plus a preamble carrying the
@@ -821,7 +994,13 @@ generated filler is the failure that prevents.
    **does the script's claim list match what the script actually says?** A script can cite C-004
    and then paraphrase it into a stronger sentence, and no parser catches that — in the source
    method this half found three reassigned ids and one claim a script never made.
-7. **The threshold precedes the posting.** Validator-enforced three ways: a `posted` round
+7. **What the machine made is disclosed**, naming script, narration, slides and music
+   separately, in the index and on the published page.
+8. **What a pledge buys is written in one sentence** before anything posts, identical in the
+   round record and on the page.
+9. **Every current scan in a pitch mode either has a consumer or a recorded reason it does
+   not.** `scans.py` produces the list; silence is the failure, not absence of a citation.
+10. **The threshold precedes the posting.** Validator-enforced three ways: a `posted` round
    without a `threshold:` field is an error, a resolved round without a `result:` is an error,
    and under `--since`, editing the threshold after the round left `draft` is an error — the
    field freezes at posting, like a proposal's filename freezes when it leaves draft.
@@ -865,6 +1044,18 @@ and tells people.
 The discipline is not *be honest because honesty is good*. It is: **this reader finds out, and
 the finding-out is the distribution channel.** That is the argument that survives contact with
 someone who wants the pitch punchier.
+
+**There is now a second limb, and it does not depend on anyone finding out.** Regulation
+research records that Regulation Crowdfunding carries **strict liability**: if an ask is ever
+held to be a securities offering, a material misstatement is enough on its own — no intent, no
+knowledge, no reliance required. Whether any given ask is such an offering is a question for
+counsel and this skill does not answer it. What follows regardless is the standard one source
+gives, which is the ledger's standard stated in a sentence: **never write a claim you could not
+answer for if asked *how can you say that*, pointing at a document.**
+
+Nine years in business and nineteen deals closed beats best-in-class and industry-leading, which
+a sophisticated reader discounts automatically — so the two limbs agree about the wording as
+well as the discipline.
 
 ## Status
 
@@ -921,6 +1112,26 @@ extracted beside riskiest-three of 0.5.
 produced, nothing posted, nothing measured. Every timing, threshold, and channel rule is
 research applied to a situation it was not gathered in.
 
+**Revision 2026-08-24b — 80 practitioner videos, and what they moved.** A distillation corpus
+of 80 videos produced three scans (`writing-the-ask-practitioner-video`,
+`non-accredited-offering-pathways`, `crowdfunding-platform-mechanics`). Reviewing this skill
+against them changed nine things, and **none of them came from running the procedure** — this
+is research applied to a skill, the same evidence class as everything above it, and it inherits
+that weakness.
+
+The structural finding is the one worth keeping: **the skill's own recorded failure recurred
+while the skill was describing it.** Three scans landed with no consumer, cited only by each
+other, and mode derivation reported no trigger. Trigger 7 and `scans.py` exist because prose
+naming a failure did not prevent its second instance — which is the same lesson as trigger 6,
+arriving a second time.
+
+What moved: trigger 7 (the evidence changed); `scans.py` and the coverage pass; AI disclosure
+as a gate; *what a pledge buys* as a gate; the cheapest-next-step call to action; the founder
+story placed last; a close date and the funding-vs-measurement distinction; the update format;
+audio ranked over picture. Two prior positions were **not** overturned but now carry falsifiers
+that name what would overturn them: the small ask, and the ten-minute length — whose stated
+falsifier was **wrong**, since a completion curve cannot see viewers who never press play.
+
 **The fork does not receive upstream revisions.** The next run there will break something in it,
 on the evidence of the previous seven, and we will not hear. Re-read and diff against the
 recorded commit deliberately or not at all.
@@ -943,12 +1154,30 @@ recorded commit deliberately or not at all.
   in this tree**: investor first-pass review averages 2 min 14 s, crowdfunding videos lose most
   viewers past 5 minutes, explainers drop sharply past 2. None of those studied a *warm* reader
   who agreed to watch, which is full mode's audience — so the finding may simply not apply, and
-  it may. **Nothing here evidences ten minutes.** The falsifier is the first full pitch's
-  completion curve: if warm viewers drop at the same place cold ones do, the format is wrong and
-  the reader-paced deck is the alternative that was set aside to get here.
+  it may. **Nothing here evidences ten minutes.**
+
+  **And the completion curve cannot falsify it alone.** A practitioner source names the
+  mechanism the curve is blind to: **the displayed runtime is read before play**, so a long
+  video *"loses people at second zero, which no amount of front-loading fixes."* Someone who
+  never presses play contributes no drop-off point — so a ten-minute pitch could fail exactly
+  this way and return a clean completion curve over the few who started. The falsifier has to
+  be the **start rate against a shorter control**: the same pitch, same audience, offered at
+  two lengths, comparing how many begin. Completion measures the format among people it already
+  survived.
 - **The six-turn backstop.** A guess with no evidence behind it.
 - **The threshold numbers.** 30 starts, 40%, 15% — derived from a binomial interval, never
   observed here.
+- **The small ask.** Phases 6–7 say resist apologising for a small number, and a practitioner
+  who ran both ends now reports against it: effort per contributor is roughly constant, so
+  raising his floor made each contributor about five times more valuable. Both can hold — the
+  same operator says the money comes from personal connection rather than expected return, which
+  is a reason to keep the ask small that has nothing to do with conversion. **What is falsified
+  is defending the small number on conversion grounds.** If turns fund at a rate that a larger
+  ask would beat on the same effort, the figure is wrong and the itemisation is not the reason
+  to keep it.
+- **The cheap call to action.** If turns with a reply-or-deposit ask produce no more
+  interpretable signal than turns asking straight for a pledge, the cheaper step is costing a
+  conversion and buying nothing.
 
 ## What to write down afterwards
 
