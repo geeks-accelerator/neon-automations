@@ -321,6 +321,10 @@ def cross_check(data):
                 err(path, f"supersedes {ref!r}, which does not exist in docs/research")
         if fm.get("status") == "current" and not fm.get("sources"):
             warn(path, "no sources listed -- research nobody can re-check is an assertion")
+        both = set(fm.get("opens") or []) & set(fm.get("answers") or [])
+        if both:
+            err(path, f"opens and answers the same slug(s): {sorted(both)} -- a question "
+                      "a scan raises and closes itself was never open")
         mode = fm.get("mode")
         if mode and mode not in RESEARCH_MODES:
             err(path, f"mode {mode!r} not in {sorted(RESEARCH_MODES)}")
@@ -467,12 +471,22 @@ def stale_research(data):
 
 
 def open_questions(data, living):
-    """Questions a record has declared it cannot answer yet.
+    """Questions declared open and not yet answered by a current scan.
 
-    A record says `needs_research: [slug]`; a research scan says
-    `answers: [slug]`. Anything unmatched is an open question. Prose cannot be
-    scanned for this -- "we should look into X" is invisible to a tool -- so the
-    marker is what makes the gate mechanical instead of a thing to remember.
+    Two ways a question gets raised. A record says `needs_research: [slug]` --
+    something it cannot answer that would change what it says. A research scan
+    says `opens: [slug]` -- a gap the scan itself surfaced while looking at
+    something else. Either way a scan closes it with `answers: [slug]`.
+
+    `opens` exists because a scan's "what could not be found" section is prose,
+    and prose is invisible to a gate. Recording an absence there created no
+    obligation to act on it: the absence sat in a paragraph while preflight
+    reported clean. That happened once, and it cost a deck's worth of research
+    aimed at the wrong audience.
+
+    Prose cannot be scanned for this -- "we should look into X" is not
+    matchable -- so the slug is what makes the gate mechanical rather than a
+    thing to remember.
     """
     answered = set()
     for _, fm in data["research"].values():
@@ -480,9 +494,17 @@ def open_questions(data, living):
             for slug in (fm.get("answers") or []):
                 answered.add(slug)
 
+    out = []
+    # gaps a scan surfaced about itself
+    for rid, (path, fm) in sorted(data["research"].items()):
+        if fm.get("status") == "superseded":
+            continue
+        for slug in (fm.get("opens") or []):
+            if slug not in answered:
+                out.append(("research", rid, slug, path))
+
     everything = {k: v for k, v in data.items()}
     everything.update(living)
-    out = []
     for kind, records in everything.items():
         for rid, (path, fm) in sorted(records.items()):
             if fm.get("status") not in OPEN_STATES:
