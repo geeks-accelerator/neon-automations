@@ -387,6 +387,7 @@ in the ledger, not billed to backers.
     | | ~2-min turn script | ~10-min full script |
     |---|---|---|
     | characters | ~1,300 | **~10,000** |
+| measured seconds | **80.9** *(242 words, ~179 wpm)* | unmeasured — the 150 wpm figure below is an estimate |
     | credits per render | ~1,300 | **~10,000** |
     | renders in a 30,000-credit Starter month | ~23 | **3** |
     | renders in a 100,000-credit Creator month | ~76 | **10** |
@@ -502,7 +503,9 @@ is under-itemized against its own process. Two lines, both published:
 ## Step 4 — script first, everything else second
 
 At ~150 words per minute, 90 seconds is **~225 words** — a drafting target, not a
-measurement. **The measurement is the rendered audio's duration** (Step 4b), and it is the
+measurement, and **measured once it is wrong by 20%**. A 242-word script estimated at 97s
+rendered at 80.9s: ~179 wpm for that voice, not 150. The rate is a property of the voice and
+the settings, so it is not a constant to correct — it is a reason not to quote an estimate. **The measurement is the rendered audio's duration** (Step 4b), and it is the
 number that gets published.
 
 Word count is a two-step estimate — count the words, assume a rate — and on the first run both
@@ -651,7 +654,31 @@ the full gate.
 - **Theme.** Generate the music bed **once** and reuse it every round. A recurring show needs a
   recurring theme; regenerating it throws away the sonic identity that makes a later episode
   recognisably the same series.
-- **Slides.** Generated on **Replicate** or **Leonardo**, ~2 attempts per keeper.
+- **Slides — and the first question is which kind of slide.** A pitch deck carries headlines
+  and figures: **the text is the content.** A first run generated moody editorial stills under
+  an explicit *no text* rule and pushed every word into captions, which is music-video grammar
+  and was rejected on sight. Three routes, in the order to reach for them:
+
+  | route | script | cost | when |
+  |---|---|---|---|
+  | **Gamma** | `gamma.py` | subscription, Pro+ | the default. Real deck design, PNG export, ~40s |
+  | **Typeset** | `deck.py` | **$0.00** | no Gamma access, or full layout control. SVG → `rsvg-convert` |
+  | **Generated** | `slides.py` | ~$0.003–0.04/image | atmosphere behind a statement slide. **Never for a number** |
+
+  **Never generate text as an image.** Models hallucinate glyphs — the first run garbled the
+  one number on the one slide whose whole subject was that number. And a pitch claiming its
+  figures are exact, typeset from approximations, argues against itself.
+
+  With Gamma, **`textMode: preserve`, not `generate`.** Expansion writes prose the ledger does
+  not back, which is the failure the ledger exists to prevent. Supply finished, claim-checked
+  copy and buy the design. `generate` is available and owes a line-by-line back-check.
+
+  Everything before the first `---` in an outline is **preamble** and is not sent — that is
+  where the file's own title and its segment→timing mapping live.
+
+- **Assembly.** `assemble.py` times slides from the **measured** per-segment audio, never the
+  storyboard's targets. Captions burn in for image-only decks; a Gamma deck already carries its
+  text, so captions there duplicate the slide and collide with it — use `--no-captions`.
 
   **Prefer a provider that can be priced per unit, and say why when you do not.** FLUX via
   Replicate/OpenRouter is quotable per image; Leonardo bills GPU-load tokens against a
@@ -809,6 +836,23 @@ for different readers rather than the same artifact at different freshness — a
 narrated pitch in the investor order for someone evaluating the project, and a <2-minute video
 in the four-part order for the crowd. Narration is TTS in both. That split is **unrun**: every
 step below describing full-mode production is N=0 again.
+
+**Run 4 — live-neon, 2026-08-24, first video.** The slides were the wrong *genre* and the
+founder said so on sight: fourteen generated editorial stills, no text, every word pushed into
+captions. Rebuilt twice — typeset via `deck.py`, then via the Gamma API — and the lesson is not
+about vendors. **A deck's text is its content, so the tool has to be one that renders text
+exactly.** Four smaller defects, all free to find: Cloudflare 1010 on a UA-less Replicate call;
+the generic `/predictions` endpoint versus `/models/{owner}/{name}/predictions`; an
+`Authorization` header sent to an output CDN, which fails *after* billing and reads as a
+generation failure; and a zip whose card 10 sorts before card 1, which reorders a deck silently
+and still plays.
+
+**Run 3 — live-neon, 2026-08-24, first narration rendered.** 80.9 seconds measured against 97
+estimated: the ~150 wpm constant this procedure inherited is **20% wrong** for a real voice.
+Nothing else changed — the script, the parser and the character count were all correct — and
+the number was still wrong, because a rate assumption is not a measurement. At the ten-minute
+long form the same error is over two minutes. Segment caching worked: a second run rendered
+nothing and cost nothing.
 
 **Run 2 — live-neon, 2026-08-24, the first re-run.** Broke three more things: the trigger list
 had no entry for *the procedure changed* (added as trigger 6, having been found by needing it);
