@@ -37,7 +37,12 @@ regenerated would turn a loud failure into a quiet one.
 signatures are load-bearing rather than cosmetic. `.allowed_signers` ships in each repo so
 anyone can verify from a clone.
 
-**Skills are symlinked from `automations/`**, a public submodule
-([neon-automations](https://github.com/geeks-accelerator/neon-automations)). Edit them
-there, never through a project's own copy — a change made through the link lands in the
-tooling repo, but a copy silently forks it.
+**Skills are symlinked from `automations/`**, this repo's own submodule of the public
+[neon-automations](https://github.com/geeks-accelerator/neon-automations). The link stays
+inside the repo, and the SHA is pinned here — a push to the tooling changes nothing until
+the pointer is bumped.
+
+Edit skills in the tooling repo, never through a project's copy: a change made through the
+link lands upstream, but a copy silently forks it. After bumping, run
+`validate.py --fix` in every consumer, since a conventions change can leave the duplicated
+block stale.
