@@ -202,6 +202,18 @@ def main():
 
     out_dir = Path(args.out) if args.out else Path(args.deck).parent / f"{Path(args.deck).stem}-slides"
     out_dir.mkdir(parents=True, exist_ok=True)
+
+    # Every card is regenerated, so anything already here is from a previous
+    # deck and is wrong. Filenames carry the layout (`03-stat.png`), so a card
+    # that changed layout leaves an orphan under the same number -- and the
+    # assembler globs by number. A 14-card deck rebuilt as 10 left eight
+    # ambiguous numbers and four orphans, and the next video would have been
+    # cut from a mix of two decks without anything failing.
+    stale = sorted(out_dir.glob("[0-9][0-9]-*.png"))
+    for f in stale:
+        f.unlink()
+    if stale:
+        print(f"  cleared {len(stale)} slide(s) from a previous render")
     print()
     for n, seg, lay, content in rows:
         body = LAYOUTS[lay](content)

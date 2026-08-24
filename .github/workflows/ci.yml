@@ -230,6 +230,62 @@ jobs:
             || { echo "::error::content below the block was lost"; exit 1; }
           echo "content below the block preserved"
 
+      # Four of the five pitch scripts had no CI at all. Each --dry-run path
+      # must run with no credentials, no network and no ffmpeg -- they are the
+      # only parts a runner can exercise, and they are where the parsers live.
+      - name: Pitch production scripts parse their inputs credential-free
+        run: |
+          S=claude/skills/pitch/scripts
+          mkdir -p /tmp/pd
+          cat > /tmp/pd/deck.md <<'MD'
+          | # | segment | layout | content |
+          |---|---|---|---|
+          | 1 | Hook | statement | One two three. |
+          | 2 | Ask | receipt | Total :: Voice\|$22 ;; TOTAL\|$22 |
+          MD
+          sed -i 's/^          //' /tmp/pd/deck.md
+          env -u REPLICATE_API_TOKEN python3 $S/deck.py /tmp/pd/deck.md --dry-run | tail -2
+          env -u REPLICATE_API_TOKEN python3 $S/slides.py /tmp/pd/deck.md --dry-run >/dev/null \
+            || { echo "::error::slides.py dry-run failed"; exit 1; }
+          cat > /tmp/pd/outline.md <<'MD'
+          # Preamble that must not become card one
+
+          | # | segment | card | note |
+          |---|---|---|---|
+          | 1 | Hook | a | |
+
+          ---
+
+          # Card one
+
+          Body.
+          MD
+          sed -i 's/^          //' /tmp/pd/outline.md
+          out=$(env -u GAMMA_API_KEY python3 $S/gamma.py /tmp/pd/outline.md --dry-run)
+          echo "$out" | head -1
+          echo "$out" | grep -q "^1 cards" \
+            || { echo "::error::gamma.py counted preamble as a card"; exit 1; }
+          echo "$out" | grep -qi "must not become card one" \
+            && { echo "::error::preamble reached the API payload"; exit 1; }
+          echo "all four dry-run parsers correct"
+
+      # Silently cutting a video from two different decks is the failure mode
+      # here: filenames carry the layout, so a card that changed layout leaves
+      # an orphan under the same number and the assembler globs by number.
+      - name: Stale slides are cleared, and ambiguity refuses
+        run: |
+          S=claude/skills/pitch/scripts
+          rm -rf /tmp/ps && mkdir -p /tmp/ps
+          printf '| # | segment | layout | content |\n|---|---|---|---|\n| 1 | Hook | stat | 9\\| things |\n' > /tmp/ps/a.md
+          python3 $S/deck.py /tmp/ps/a.md --out /tmp/ps/slides >/dev/null
+          printf '| # | segment | layout | content |\n|---|---|---|---|\n| 1 | Hook | statement | Different layout. |\n' > /tmp/ps/a.md
+          out=$(python3 $S/deck.py /tmp/ps/a.md --out /tmp/ps/slides)
+          echo "$out" | grep -q "cleared 1 slide" \
+            || { echo "::error::stale slide not cleared"; exit 1; }
+          [ "$(ls /tmp/ps/slides/*.png | wc -l)" -eq 1 ] \
+            || { echo "::error::orphan slide survived"; exit 1; }
+          echo "stale slides cleared on re-render"
+
       # A marker named in frontmatter must not be treated as a block opener.
       # The fixture carries the case; this asserts the body survives, because
       # "clean" alone would pass on a file whose content had been eaten.

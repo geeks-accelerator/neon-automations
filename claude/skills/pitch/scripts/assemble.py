@@ -83,6 +83,8 @@ def main():
     ap.add_argument("--slides", default=None, help="slide directory (default: alongside storyboard)")
     ap.add_argument("--out", default=None)
     ap.add_argument("--no-captions", action="store_true")
+    ap.add_argument("--dry-run", action="store_true",
+                    help="print the slide/timing plan and exit; no ffmpeg, no encode")
     ap.add_argument("--caption-theme", default="dark", choices=["dark", "light"],
                     help="light = dark text on a pale band, for light slide decks")
     args = ap.parse_args()
@@ -97,6 +99,10 @@ def main():
 
     if not full_audio.exists():
         sys.exit(f"no narration at {full_audio} -- run render.py first")
+    if not args.dry_run:
+        for b in ("ffmpeg", "ffprobe"):
+            if subprocess.run(["which", b], capture_output=True).returncode != 0:
+                sys.exit(f"{b} not found on PATH")
     segments = R.parse_sections(script)
     _, rows = S.parse_storyboard(sb)
     if not rows:
@@ -123,13 +129,34 @@ def main():
         for n in nums:
             matches = sorted(slide_dir.glob(f"{n:02d}-*.png"))
             if not matches:
-                sys.exit(f"no image for slide {n} in {slide_dir} -- run slides.py")
+                sys.exit(f"no image for slide {n} in {slide_dir} -- run deck.py or gamma.py")
+            if len(matches) > 1:
+                # Picking one silently is how a video gets cut from two decks.
+                sys.exit(f"slide {n} is ambiguous in {slide_dir}:\n  "
+                         + "\n  ".join(m.name for m in matches)
+                         + "\nLeftovers from an earlier render. Delete the directory and "
+                           "re-run the deck script.")
             plan.append((matches[0], each))
+
+    used = {p.name for p, _ in plan}
+    orphans = [f.name for f in sorted(slide_dir.glob("[0-9][0-9]-*.png"))
+               if f.name not in used]
+    if orphans:
+        print(f"  note: {len(orphans)} image(s) in {slide_dir} are not in the deck "
+              f"and will be ignored: {', '.join(orphans[:6])}"
+              + (" ..." if len(orphans) > 6 else ""))
 
     total = sum(d for _, d in plan)
     print(f"{len(plan)} slides over {total:.1f}s of narration")
     for p, d in plan:
         print(f"  {d:5.1f}s  {p.name}")
+
+    if args.dry_run:
+        # The plan is where the mistakes live -- a wrong segment mapping, a
+        # missing image, a slide count that does not match the deck. Checking it
+        # without ffmpeg means CI can catch those on a runner with no encoder.
+        print("\n  (dry run -- nothing encoded)")
+        return 0
 
     with tempfile.TemporaryDirectory() as td:
         td = Path(td)

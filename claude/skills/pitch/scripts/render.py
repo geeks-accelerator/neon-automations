@@ -211,7 +211,10 @@ def report(sections, measured=None):
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
-    ap.add_argument("script", help="path to a pitch script (two-minute.md, long-form.md)")
+    ap.add_argument("script", nargs="?", default=None,
+                    help="path to a pitch script (two-minute.md, long-form.md)")
+    ap.add_argument("--list-voices", action="store_true",
+                    help="print the account's voices and exit; costs nothing")
     ap.add_argument("--dry-run", action="store_true",
                     help="parse and report only; no API key, no ffmpeg, no cost")
     ap.add_argument("--out", default=None, help="output directory (default: alongside the script)")
@@ -221,6 +224,17 @@ def main():
     ap.add_argument("--force", action="store_true",
                     help="re-render every section, ignoring the cache")
     args = ap.parse_args()
+    if not args.script and not args.list_voices:
+        ap.error("a script path is required (or pass --list-voices)")
+
+    if args.list_voices:
+        import json as _json
+        data, _ = elevenlabs_request("/voices")
+        for v in _json.loads(data).get("voices", []):
+            lab = v.get("labels") or {}
+            bits = ", ".join(f"{k}={val}" for k, val in list(lab.items())[:4])
+            print(f"  {v.get('voice_id',''):<24} {v.get('name','')[:22]:<24} {bits[:64]}")
+        return 0
 
     src = Path(args.script)
     if not src.exists():

@@ -735,7 +735,15 @@ docs/pitch/                       living, optional, rebuilt by full
 ├── what-exists-now.md            the five buckets
 ├── the-ask.md
 ├── riskiest-assumptions.md
-└── reactions.md                  Phase 3.5
+├── reactions.md                  Phase 3.5
+├── deck-outline.md               gamma.py input — cards, plus a preamble carrying the
+│                                 file's title and the segment→timing mapping
+└── storyboard.md                 deck.py input — the SAME cards, typeset
+
+**Both deck specs describe one pitch.** Two renderers over one narrative is a feature; two
+renderers over two narratives is drift, and it happened — a 14-card storyboard sat beside the
+10-card deck that actually shipped, so the fallback would have rendered a pitch nobody
+reviewed. When one changes, change the other.
 
 docs/rounds/2026-08-24-turn-N.md  event, optional, one per turn
 ```

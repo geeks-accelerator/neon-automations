@@ -103,6 +103,11 @@ def download(url, dest_dir, prefix="slide"):
     with urllib.request.urlopen(req, timeout=300) as r:
         blob = r.read()
     dest_dir.mkdir(parents=True, exist_ok=True)
+    # Same hazard deck.py has: a re-run producing fewer cards leaves orphans
+    # under numbers the assembler globs by, and it would cut a video from two
+    # decks without failing.
+    for f in sorted(dest_dir.glob("[0-9][0-9]-*.png")):
+        f.unlink()
     if blob[:2] == b"PK":
         names = []
 
