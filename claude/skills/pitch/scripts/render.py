@@ -305,6 +305,19 @@ def main():
     concat(files, full)
     measured = probe_duration(full)
 
+    # Persist it. A consumer that needs this number and has no path to it gets
+    # a hand-typed one -- publish.py carried "80.9s" as a literal for exactly
+    # that reason, and a hand-typed measurement on a published page is the
+    # failure this script exists to prevent. Writing it here makes the
+    # reporting path a mode of the consuming path.
+    spoken_words = sum(len(txt.split()) for _, txt in sections)
+    (out_dir / "duration.json").write_text(json.dumps({
+        "seconds": round(measured, 1),
+        "words": spoken_words,
+        "wpm": round(spoken_words / (measured / 60)) if measured else None,
+        "source": src.name,
+    }, indent=2), encoding="utf-8")
+
     print(f"\n  {rendered} rendered, {reused} reused -> {full}")
     print()
     report(sections, measured=measured)

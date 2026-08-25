@@ -23,6 +23,7 @@ serves as-is.
 """
 import argparse
 import html
+import json
 import re
 import shutil
 import sys
@@ -64,6 +65,54 @@ def read_fm(path, key):
         if line.startswith(f"{key}:"):
             return line.split(":", 1)[1].strip().strip('"').strip("'")
     return ""
+
+
+def project_name(proj):
+    """The project's own display name, from its README H1.
+
+    Not the directory name: a slug like "some-project" is a path, while the
+    README H1 is what the project calls itself, and a published page carries
+    the second.
+    """
+    for candidate in (proj / "README.md", proj / "docs" / "README.md"):
+        if candidate.exists():
+            m = re.search(r"^#\s+(.+)$", candidate.read_text(encoding="utf-8"), re.M)
+            if m:
+                return m.group(1).strip()
+    return proj.resolve().name
+
+
+def one_liner(pitch):
+    """The page headline is the pitch's own one-liner, not a copy of it.
+
+    It was previously a string literal here that duplicated one-liner.md
+    almost-but-not-quite -- two paths to one sentence, which is how they drift.
+    """
+    f = pitch / "one-liner.md"
+    if f.exists():
+        body = f.read_text(encoding="utf-8").split("<!-- /nav:parent -->")[-1]
+        for para in body.split("\n\n"):
+            s = " ".join(para.split()).strip()
+            if s and not s.startswith(("#", "<!--", "**Parent:**", "|", "-")):
+                return s.strip("*")
+    return ""
+
+
+def duration(audio_dir, unit):
+    """Measured seconds from render.py's duration.json, or None.
+
+    Never a fallback figure. A published duration that nobody measured is the
+    exact defect this pipeline has hit three times, so when the render has not
+    run the page omits the line rather than stating a number.
+    """
+    f = audio_dir / "duration.json"
+    if not f.exists():
+        return None
+    try:
+        secs = json.loads(f.read_text(encoding="utf-8"))["seconds"]
+    except (ValueError, KeyError):
+        return None
+    return f"{secs:.1f}s" if unit == "s" else f"{secs / 60:.1f}"
 
 
 def read_ask(pitch):
@@ -144,8 +193,7 @@ footer{{margin-top:60px;padding-top:22px;border-top:1px solid var(--line);color:
 <video controls preload="metadata" playsinline poster="media/poster.png">
 <source src="media/round.mp4" type="video/mp4">
 </video>
-<p class=cite>Round {ctx['turn']} — {ctx['round_secs']} · the full {ctx['full_mins']}-minute
-version is <a href="media/full.mp4">here</a>.</p>
+<p class=cite>{ctx['cite']}</p>
 
 <h2>What this round costs</h2>
 <p>Itemized from public list prices. Not a target — a receipt.</p>
@@ -225,20 +273,30 @@ def main():
     idx = (pitch / "README.md").read_text(encoding="utf-8")
     rm = re.search(r"riskiest[^:]*:\s*\*?\*?([\d.]+)\s*of\s*(\d+)", idx, re.I)
 
+    turn = read_fm(rec, "turn") or "1"
     ctx = {
-        "title": "LiveNeon — Round 1",
-        "headline": "A funding round whose cost is a receipt and whose "
-                    "threshold is frozen before it posts.",
-        "lead": "For software that does not exist yet. Every claim below is tagged with the "
-                "kind of evidence behind it, including the ones nothing backs.",
+        "title": f"{project_name(proj)} — Round {turn}",
+        "headline": one_liner(pitch),
+        "lead": "Every claim below is tagged with the kind of evidence behind it, "
+                "including the ones nothing backs.",
         "claims": claims, "n_claims": len(claims),
         "pct": round(ex / max(len(claims), 1) * 100),
         "risk": rm.group(1) if rm else "?", "risk_n": rm.group(2) if rm else "?",
         "ask": read_ask(pitch),
         "threshold": read_fm(rec, "threshold") or "(no threshold recorded)",
-        "turn": read_fm(rec, "turn") or "1",
-        "round_secs": "80.9s", "full_mins": "9.5",
+        "turn": turn,
     }
+    # Built here rather than interpolated in the template, because each half is
+    # a measurement that may not exist yet and "Round 1 - None" is worse than a
+    # shorter sentence.
+    secs = duration(pitch / "two-minute-audio", "s")
+    mins = duration(pitch / "long-form-audio", "m")
+    cite = f"Round {turn}" + (f" &mdash; {secs}" if secs else "")
+    if mins and (pitch / "long-form-video" / "round.mp4").exists():
+        cite += f' &middot; the full {mins}-minute version is <a href="media/full.mp4">here</a>.'
+    else:
+        cite += "."
+    ctx["cite"] = cite
 
     print(f"  {len(claims)} claims, {ex} extracted ({ctx['pct']}%)")
     print(f"  riskiest {ctx['risk']} of {ctx['risk_n']}   ask lines: {len(ctx['ask'])}")

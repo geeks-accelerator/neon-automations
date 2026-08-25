@@ -55,9 +55,8 @@ are the other job entirely.
 **Why audience-facing renders are opt-in.** Phase 11 already says production runs after Phase 3.5
 and never before, because producing before a human has heard the script is polishing something
 nobody reacted to. On 2026-08-24 that rule was written down and then broken by the next run:
-live-neon's `docs/pitch/reactions.md` read `## Status: NOT RUN` while two videos existed, a
-2-minute and a 9.5-minute. (Cited without a link: project repositories are private, so a path
-from this public repo would neither resolve nor be readable.) Prose naming the failure did not
+the N=1 target's `docs/pitch/reactions.md` read `## Status: NOT RUN` while two videos existed,
+a 2-minute and a 9.5-minute. Prose naming the failure did not
 prevent it, which is the lesson trigger 6 and trigger 7 each arrived at separately. A default
 that makes the expensive, irreversible, unreviewed step **opt-in** is the structural version of
 a rule that prose did not hold.
@@ -1128,7 +1127,11 @@ were carrying the grouping anyway. A change to fit the conventions, not to impro
 **No `research/` subtree** — Phases 3–5 cite `docs/research/` instead.
 
 **Render output sits beside the scripts**, one directory per script per format
-(`two-minute-audio`, `long-form-video`, `deck-slides`). A render directory whose script has
+(`two-minute-audio`, `long-form-video`, `deck-slides`). An audio directory carries
+`cache.json` (segment digests) and `duration.json` (the measured seconds, spoken word count and
+the resulting wpm). **`duration.json` is where any consumer reads a duration from** — the
+published page did once carry a hand-typed `80.9s`, because the number was measured, printed,
+and never written down, leaving every downstream reader to retype it. A render directory whose script has
 moved since it was produced is what the render check reports.
 
 Drop a file when the project genuinely has nothing for it, and say so in the index. A stub of
@@ -1232,12 +1235,17 @@ all seven and are worth more than any single finding: the ratio consistently mis
 riskiest-three number does not; the pull is toward prosecution, not persuasion; and after the
 arithmetic rules existed, the errors moved from memory into instruments.
 
+**This skill is project-agnostic and names no tenant.** Runs below are "the N=1 target" because
+a public, reusable skill should not carry a private project's name; the traceable record — which
+project, which commit, what broke — lives in the registry's `docs/observations/`, which is
+public. Provenance belongs there, and the transferable lesson belongs here.
+
 **The extraction half here: N=1.** Full mode ran once, and broke four things the prose had not
 anticipated — which is the source method's own pattern continuing:
 
 | run | target | what it broke |
 |---|---|---|
-| 1 | live-neon, 2026-08-24 | **The gate-6 judgement half, both directions at once** — the script's claim list named three ids the script never says and missed four it needs, while the mechanical half passed clean. A word count stated as a measurement was a target (claimed 228, measured 273), and the fixed instrument later broke again by absorbing generated nav. Assembly shipped two arithmetic defects ("six of eight" over a list of five; a $30 ask over an itemization summing to 31). Found and left in place: a silent data-loss defect in the shared tooling, and a docs-vs-world mismatch (the named domain serves a different product) |
+| 1 | the N=1 target, 2026-08-24 | **The gate-6 judgement half, both directions at once** — the script's claim list named three ids the script never says and missed four it needs, while the mechanical half passed clean. A word count stated as a measurement was a target (claimed 228, measured 273), and the fixed instrument later broke again by absorbing generated nav. Assembly shipped two arithmetic defects ("six of eight" over a list of five; a $30 ask over an itemization summing to 31). Found and left in place: a silent data-loss defect in the shared tooling, and a docs-vs-world mismatch (the named domain serves a different product) |
 
 **Revised after run 1**, on the founder's call: the two modes now produce different artifacts
 for different readers rather than the same artifact at different freshness — a ~10-minute
@@ -1245,7 +1253,7 @@ narrated pitch in the investor order for someone evaluating the project, and a <
 in the four-part order for the crowd. Narration is TTS in both. That split is **unrun**: every
 step below describing full-mode production is N=0 again.
 
-**Run 4 — live-neon, 2026-08-24, first video.** The slides were the wrong *genre* and the
+**Run 4 — 2026-08-24, first video.** The slides were the wrong *genre* and the
 founder said so on sight: fourteen generated editorial stills, no text, every word pushed into
 captions. Rebuilt twice — typeset via `deck.py`, then via the Gamma API — and the lesson is not
 about vendors. **A deck's text is its content, so the tool has to be one that renders text
@@ -1255,14 +1263,14 @@ the generic `/predictions` endpoint versus `/models/{owner}/{name}/predictions`;
 generation failure; and a zip whose card 10 sorts before card 1, which reorders a deck silently
 and still plays.
 
-**Run 3 — live-neon, 2026-08-24, first narration rendered.** 80.9 seconds measured against 97
+**Run 3 — 2026-08-24, first narration rendered.** 80.9 seconds measured against 97
 estimated: the ~150 wpm constant this procedure inherited is **20% wrong** for a real voice.
 Nothing else changed — the script, the parser and the character count were all correct — and
 the number was still wrong, because a rate assumption is not a measurement. At the ten-minute
 long form the same error is over two minutes. Segment caching worked: a second run rendered
 nothing and cost nothing.
 
-**Run 2 — live-neon, 2026-08-24, the first re-run.** Broke three more things: the trigger list
+**Run 2 — 2026-08-24, the first re-run.** Broke three more things: the trigger list
 had no entry for *the procedure changed* (added as trigger 6, having been found by needing it);
 the gate-6 back-check **failed a second time**, exactly as its observation predicted from the
 ordering, naming one claim the script never made and missing eight it did; and the
