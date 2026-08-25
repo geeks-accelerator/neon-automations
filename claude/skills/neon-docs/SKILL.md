@@ -366,6 +366,32 @@ that named a number.
 Filenames are plain lowercase slugs — `concept.md`, not `01-CONCEPT.md`. `LIVING_NAME_RE`
 rejects the uppercase form outright, so this is checked rather than merely conventional.
 
+### The test for a living directory
+
+Before adding a file to `architecture/` or `vision/`, ask:
+
+> **Does this document ever get to be *done*, or can it only ever become *untrue*?**
+
+A living document carries no `status`, no dates, and no terminal state — `collect_living`
+errors on `status`, `opened`, and `decided` outright. So a file here **cannot close**. It has
+two exits: rewritten, or deleted.
+
+That fits a stance and breaks an initiative. Anything with a lifecycle goes in an event
+directory, where `status` exists and `shipped` is expressible. Get it backwards and the
+directory fills with one permanent file per initiative, none of which is allowed to end —
+which is the failure mode this test exists to catch, because nothing in the validator will.
+
+**A scope boundary is the case worth naming**, because it reads like an epic and is not one.
+"Where the first build stops" never completes; either it holds or the boundary moves and you
+rewrite the sentence. It is also singular — a project has one, not one per initiative.
+
+Its work list is not a backlog, and it does not become one. An epic in a tracker owns its
+children; here the tippable unit is a `proposals/` entry, and **a proposal's only child link
+is `plans:`** — so a boundary composed of proposals cannot itself be a proposal. The edge that
+does exist points the other way: `LIVING = {"vision": {"cites": ("proposals", "proposals")}}`.
+Put `proposals: [...]` in the boundary's frontmatter and the validator checks every id
+resolves. That is the containment, and it needs no new directory.
+
 When a passage in them stops holding and the *reasoning* is worth keeping, write a
 `decisions/` entry and cite it from the prose. Do not leave a superseded banner in place —
 that is an event log stuffed inside a living document, which is the conflation these two
