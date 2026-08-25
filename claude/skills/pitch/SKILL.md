@@ -1,20 +1,22 @@
 ---
 name: pitch
-description: Produce a round's pitch — the claims ledger, the script, the itemized ask, the narrated video — and post it. Use this skill whenever asked to make a pitch, pitch deck, pitch video, round video, or funding ask for a project, to open or close a turn of the funding loop, or to rebuild or refresh a project's pitch. It derives its own mode (a full extraction from the repository, or an incremental turn off the standing ledger), runs the research preflight first, and stops if open questions, stale research, or validation errors remain — so reach for it at the start of pitch work rather than after a deck exists. Also use it when asked "what goes in the pitch", "how long should the video be", "what can we honestly claim", or "what should we ask for".
+description: Produce a round's pitch — the claims ledger, the script, the itemized ask, the narrated video — and post it. Use this skill whenever asked to make a pitch, pitch deck, pitch video, round video, or funding ask for a project, to open or close a turn of the funding loop, or to rebuild or refresh a project's pitch. It derives its own mode (a full extraction from the repository, an incremental turn off the standing ledger, or an elevator card assembled from what is already there) and its own format (markdown and gauge audio always, audience-facing renders on request), runs the research preflight first, and stops if open questions, stale research, or validation errors remain — so reach for it at the start of pitch work rather than after a deck exists. Also use it when asked "what goes in the pitch", "how long should the video be", "what can we honestly claim", or "what should we ask for".
 ---
 
 # pitch
 
-Two modes over one claims ledger.
+Three modes over one claims ledger, and a format axis independent of all three.
 
-| | **full** | **turn** |
-|---|---|---|
-| produces | `docs/pitch/` — the ledger, and a **~10-minute narrated pitch** | `docs/rounds/2026-08-24-turn-N.md` — script, ask, threshold, result, and a **<2-minute video** |
-| when | init, and when a trigger fires | every other turn |
-| reader | evaluating the whole project — investor, client, partner, contributor | a stranger deciding whether to tip |
-| order | problem → solution → market → traction → business model → team → ask | hook → problem → solution → ask |
-| why that order | researched for partners running diligence, and this is that audience | researched for strangers deciding in seconds, and this is that audience |
-| narration | ElevenLabs TTS | ElevenLabs TTS |
+| | **full** | **turn** | **elevator** |
+|---|---|---|---|
+| produces | `docs/pitch/`, the ledger and a **~10-minute** script | `docs/rounds/2026-08-24-turn-N.md`, script, ask, threshold, result, and a **<2-minute** script | `docs/pitch/the-room.md`, assembled, **nothing new written** |
+| when | init, and when a trigger fires | every other turn | on request, and before Phase 3.5 |
+| reader | evaluating the whole project: investor, client, partner, contributor | a stranger deciding whether to tip | someone who just asked what you do |
+| can they interrupt | no | no | **yes** |
+| success is | a diligence decision | a pledge | **a follow-up question** |
+| order | problem → solution → market → traction → business model → team → ask | hook → problem → solution → ask | the one line, then whatever they ask |
+| formats | markdown, gauge audio; video and deck on request | markdown, gauge audio; video and deck on request | markdown, and it never renders |
+| why that order | researched for partners running diligence, and this is that audience | researched for strangers deciding in seconds, and this is that audience | there is no order to defend once they can interrupt |
 
 **The two orders are both correct, for different readers.** An earlier version of this project
 applied the investor order to a ninety-second crowd pitch and filed a high-severity issue about
@@ -22,7 +24,59 @@ it. The fix was not "the investor research was wrong" — it studies partners ru
 accurately. The fix is that **the order is a function of the audience**, and the two modes have
 different ones. Neither order may be used in the other mode.
 
+**Elevator is a third reader, not a third length.** The other two cannot interrupt: one is
+running diligence on their own time, the other is scrolling. The elevator listener is in a live
+two-way exchange, can stop you mid-sentence, and what counts as success there is not a decision
+but a follow-up question. Different shape, not a shorter one. The one-liner is already the short
+cut, and a mode that only shortens is a length knob wearing a mode's clothes.
+
 Design and reasoning: [two pitch modes over one claims ledger](https://github.com/geeks-accelerator/code-neon/blob/main/docs/proposals/2026-08-24-pitch-modes-full-and-turn.md).
+
+## The format axis
+
+**Mode is who the reader is. Format is what gets rendered. They are independent, and fusing them
+has already cost this project twice.**
+
+| format | when it runs | why |
+|---|---|---|
+| `markdown` | always, in every mode | the script, the ledger, the ask. The floor, never optional |
+| `audio` | **by default**, in both rendering modes | an instrument, not an artifact. It is how duration stops being an assumption (Step 4b) |
+| `video` | **on request, and not before `reactions.md` has content** | audience-facing |
+| `deck` | **on request, and not before `reactions.md` has content** | audience-facing |
+| `music` | on request, with video | audience-facing |
+
+**The line is not markdown against rendered. It is instrument against artifact**, and Step 4b
+already drew it: the gauge render *"is a gauge, not necessarily the ship take, and the two jobs
+are different."* A gauge render is a measurement, it is cached by segment hash, and on run 3 it
+is the only reason anyone discovered the inherited 150 wpm constant was 20% wrong. Making it
+opt-in would delete the one instrument here that has caught a real error. Audience-facing renders
+are the other job entirely.
+
+**Why audience-facing renders are opt-in.** Phase 11 already says production runs after Phase 3.5
+and never before, because producing before a human has heard the script is polishing something
+nobody reacted to. On 2026-08-24 that rule was written down and then broken by the next run:
+live-neon's `docs/pitch/reactions.md` read `## Status: NOT RUN` while two videos existed, a
+2-minute and a 9.5-minute. (Cited without a link: project repositories are private, so a path
+from this public repo would neither resolve nor be readable.) Prose naming the failure did not
+prevent it, which is the lesson trigger 6 and trigger 7 each arrived at separately. A default
+that makes the expensive, irreversible, unreviewed step **opt-in** is the structural version of
+a rule that prose did not hold.
+
+**And the modes overlap on format, which one field cannot record.** Turn 1 carries
+`pitch_mode: full` over a script its own record describes as the crowd order, because both modes
+shipped a video that turn. One value cannot say two things. `mode:` and `format:` as separate
+fields can.
+
+**Elevator is what proves the axes are independent**: it has no render at all. A human says it.
+Its format set is `markdown`, since the floor is never optional; its **render set** is empty, and
+a mode that stays meaningful with nothing rendered is only expressible if format is its own
+field.
+
+> **This requires a schema change that has not been made.** `validate.py` constrains `pitch_mode`
+> to `["full", "turn"]`, and `schemas.md` documents it as one value meaning *which mode produced
+> this round's script*. Until the round record carries `mode:` (three values) and `format:` (a
+> list), the frontmatter this file describes will not validate. That change touches every project
+> using `neon-docs`, so it is a deliberate migration and not a side effect of this revision.
 
 > **The evidence half is forked from `gitwverse`, N=7 repositories, at commit `cc5f205e`.**
 > The production half is ours and is **N=0** — no pitch has been produced, so every step below
@@ -34,7 +88,7 @@ Design and reasoning: [two pitch modes over one claims ledger](https://github.co
 
 # Part 1: The operating core
 
-Used continuously in both modes. Read it first and keep it open; the rationale is in Part 5.
+Used continuously in every mode. Read it first and keep it open; the rationale is in Part 6.
 
 ## The four tags
 
@@ -156,11 +210,13 @@ every claim that reaches a stranger goes out ungated.
 
 ---
 
-# Part 2: Derive the mode
+# Part 2: Derive the mode and the format
 
-**Neither mode is the default.** The state lives in the tree: whether `docs/pitch/` exists,
-each round record's `pitch_mode:` (how many turns since the last `full`), its `demoted:` list
-(this feeds trigger 3), and `reactions.md` / round results (trigger 2). Read it, decide, and
+**No mode is the default, and only two of the three are derived at all.** Elevator is never
+derived — it is asked for, and it can be asked for at any time, because it adds nothing and
+ships nothing. Between `full` and `turn`, the state lives in the tree: whether `docs/pitch/`
+exists, each round record's `pitch_mode:` (how many turns since the last `full`), its `demoted:`
+list (this feeds trigger 3), and `reactions.md` / round results (trigger 2). Read it, decide, and
 **say which and why** before doing anything else:
 
 ```
@@ -204,7 +260,35 @@ would have said *"turn — no trigger fired"* while the correct answer was plain
 rebuild. A trigger list that omits *"the method changed"* silently pins every project to the
 procedure in force the day it was first run.
 
-## Step 1 in both modes — preflight, and stop if it fails
+## Deriving the format
+
+**Format is never derived. It is asked for, or it is the default**: markdown plus the gauge
+audio render, in both rendering modes, and markdown alone in elevator. Video, deck and music are
+named explicitly by a human and are refused while `reactions.md` has no content.
+
+### The render check — and it is deliberately not trigger 8
+
+One check runs on this axis. **It is not numbered into the trigger list, and the reason is the
+same argument this revision is built on.** Triggers 1–7 all resolve to one action: rebuild the
+pitch. This resolves to a different one: report a divergence. Numbering it 8 would put two
+actions behind one sequence, which is precisely the defect that `pitch_mode` holding one value
+for two axes already produced. A list, like a field, should say one thing.
+
+**A render no longer matches its script.** `render.py` caches segments by content hash —
+`cache.json` records `sha256(model|voice|text)` per segment — so the detector already exists as
+data and nothing reads it for this. When a published audio, video or deck was rendered from a
+script that has since moved, that render is stale in exactly the sense a demoted claim is stale:
+true when made, unverified now. It goes in the staleness report with the date it diverged, and
+it is **not silently re-rendered**, because re-rendering hides that what a reader saw and what
+the tree says have come apart.
+
+Two notes on the instrument. The digest covers voice and model as well as text, so a voice
+change reads as divergence too — correct for *this render no longer matches*, wider than *the
+script moved*, and worth saying which one a report means. And triggers 1–7 all watch the pitch's
+content; this is the only check on the format axis, and it was invisible while mode and format
+were the same field.
+
+## Step 1 in every mode — preflight, and stop if it fails
 
 ```bash
 python3 .claude/skills/neon-docs/scripts/validate.py --preflight
@@ -682,10 +766,12 @@ lands.
 
 ### Step 4b — render the audio, and listen to it
 
-**Every pitch renders narration by default, in both modes.** ElevenLabs, straight from the
-script, before any slide exists. This is a **gauge, not necessarily the ship take**, and the
-two jobs are different — conflating them is what kept TTS filed as a later A/B experiment when
-it was always the cheapest rehearsal available.
+**Every pitch renders narration by default, in both rendering modes.** This is the `audio`
+format, and it is the one render that does not wait for Phase 3.5, because it is an instrument
+rather than an artifact. ElevenLabs, straight from the script, before any slide exists. This is
+a **gauge, not necessarily the ship take**, and the two jobs are different — conflating them is
+what kept TTS filed as a later A/B experiment when it was always the cheapest rehearsal
+available.
 
 What the render is for:
 
@@ -718,7 +804,7 @@ The counter is now the renderer.
 Re-render on every draft — the cache means only a changed segment costs credits, which is what
 makes iterating on a ten-minute script affordable at all.
 
-**TTS ships, in both modes.** Replacing the audio track with a human recording is **out of
+**TTS ships, in both rendering modes.** Replacing the audio track with a human recording is **out of
 scope for now** and is a reasonable future feature; nothing in the procedure prevents it, and
 the script and slide timings do not change if it happens.
 
@@ -907,14 +993,16 @@ launching; the cadence *is* that warm-up.
 
 ## Step 7b — the update, which is the same document every time
 
-A round ends; the backers do not. The update between turns is a **format, not an occasion**,
-and its consistency is what makes movement visible:
+A round ends; the backers do not. The update between turns is a **fixed shape, not an
+occasion** — not a `format:` in the axis sense — and its consistency is what makes movement
+visible:
 
 - **Bottom line up front, including the lowlights, quantified.** One page.
 - **Monthly or quarterly.** Weekly is too often to have anything to say, and is reported as the
   fastest route to unsubscribes.
 - **Identical structure every time.**
-- **Repeat the elevator pitch.** Small backers forget what they backed.
+- **Repeat the elevator pitch.** Small backers forget what they backed. This is
+  `the-room.md`, unchanged — which is the point of its being assembled rather than written.
 - **End with two or three specific asks.** An update with no ask trains people not to reply.
 
 The common founder error here is reported as **over-secrecy, not over-disclosure** — and honest
@@ -933,7 +1021,70 @@ python3 .claude/skills/neon-docs/scripts/validate.py --fix
 
 ---
 
-# Part 5: Output, gates, and why
+# Part 5: elevator
+
+Produces `docs/pitch/the-room.md`. **Assembles, and writes nothing new. That property is the
+whole gate.**
+
+Phase 3.5 needs a person, and it has not run here or in any of the seven repositories the
+evidence half was forked from. The scripts exist. What has never existed is one surface you carry
+into a live exchange where the other person can interrupt you.
+
+**Invocable alone.** On a tree that already exists this runs by itself: read the tree, assemble
+the card, stop. No re-scan, no Phase 0, no trigger derivation. It is the only mode with that
+property, because it is the only one that adds no claims.
+
+**It still runs Step 1, and that is deliberate.** *Invocable alone* means it skips derivation and
+extraction, not the gate. This is the one surface a human says out loud to another human, and a
+stale number spoken in a room is the failure preflight exists to prevent — more so than in a
+document, because nothing said in a room can be quietly corrected later.
+
+The counter-argument is real and is recorded rather than followed: elevator is how Phase 3.5 gets
+fed, Phase 3.5 is the only step that can falsify the pitch, and blocking it on an expired
+`pricing` scan stops the falsification for a reason unrelated to it. **If that ever actually
+blocks a conversation, the right fix is to refresh the scan, not to weaken the gate** — and if it
+blocks twice for scans nobody would have spoken from, this rule is wrong and preflight should
+warn rather than block in this mode.
+
+Assemble, in this order:
+
+1. The one line, then its strongest `EXTRACTED` claim stated in full. In a room the follow-up is
+   "really?", and a claim id cannot be said out loud.
+2. The script, **verbatim from `two-minute.md`**. Not a fresh cut. Two scripts that differ leave
+   gate 6's judgement half nothing to bind to.
+3. The three riskiest assumptions, phrased as what you want pushed on.
+4. The two numbers, so an honest answer to "how solid is this" is already written down.
+5. **What a pledge buys**, in the one sentence gate 8 requires. In a two-way exchange this is the
+   question that actually arrives, and it is the boundary the regulation research turns on.
+6. The capture stub: what to write afterwards, and Pivot, Persevere or Pause.
+
+It must not:
+
+- **Carry a claim absent from `claims.md`.** The ledger invariant has no elevator exception. A
+  surface that generates nothing cannot inflate the ratio or reach an unearned tag, which is the
+  entire reason this mode is cheap enough to add before turn mode has ever run.
+- **Author a fourth length.** The one-liner is already the short cut. A thirty-second compression
+  written here is a new script with no back-check against the ledger.
+- **End on the ask.** End on the question you most need answered. In a live exchange the ask
+  arrives as their question, if it arrives at all.
+- **Speak a `CHECKED` claim.** Gate 5 keeps `CHECKED` out of the one-liner because that sentence
+  carries the most weight per word. A spoken card shows no tags at all, so the same reasoning
+  covers all of it.
+- **Render.** Markdown is the floor here as everywhere; its **render set** is empty by
+  definition. If it has a video, it is not this mode.
+
+**Elevator does not open or close a turn.** No round record, no threshold, nothing posted, so
+gate 4 has nothing to bind to and gate 10 cannot fire. It is how the human gate gets fed, which
+is why it runs before Phase 3.5 rather than after it.
+
+**Forked back from `gitwverse`**, where the same artifact was added on 2026-08-24 as Phase 10.5
+for the opposite reason: not that a third reader existed, but that Phase 3.5 had never run across
+seven repositories and nothing in the tree was carryable. Two derivations of one artifact from
+two directions is the useful part; neither has been read to anybody.
+
+---
+
+# Part 6: Output, gates, and why
 
 ## Output shape
 
@@ -950,6 +1101,7 @@ docs/pitch/                       living, optional, rebuilt by full
 ├── what-exists-now.md            the five buckets
 ├── the-ask.md                    itemized, milestone-shaped, and what a pledge buys
 ├── riskiest-assumptions.md
+├── the-room.md                   elevator mode, assembled from this tree, adds no claims
 ├── reactions.md                  Phase 3.5
 ├── deck-outline.md               gamma.py input — cards, plus a preamble carrying the
 │                                 file's title and the segment→timing mapping
@@ -975,6 +1127,10 @@ were carrying the grouping anyway. A change to fit the conventions, not to impro
 
 **No `research/` subtree** — Phases 3–5 cite `docs/research/` instead.
 
+**Render output sits beside the scripts**, one directory per script per format
+(`two-minute-audio`, `long-form-video`, `deck-slides`). A render directory whose script has
+moved since it was produced is what the render check reports.
+
 Drop a file when the project genuinely has nothing for it, and say so in the index. A stub of
 generated filler is the failure that prevents.
 
@@ -985,7 +1141,8 @@ generated filler is the failure that prevents.
 3. **The problem is a mechanism, not a rival.** Alternatives described accurately, including
    what they do better.
 4. **Human validation before done.** Phase 3.5 in full mode, a measured threshold in turn mode,
-   or the index says DRAFT.
+   or the index says DRAFT. Elevator mode has no such gate, because it ships nothing and exists
+   to feed Phase 3.5 rather than to substitute for it.
 5. **`CHECKED` never carries a riskiest assumption and never appears in the one-liner.**
 6. **Ledger integrity.** Two halves. The mechanical half is **validator-enforced**: a claim is
    a `| C-NNN |` table row in `claims.md` (row format in
@@ -1004,6 +1161,16 @@ generated filler is the failure that prevents.
    without a `threshold:` field is an error, a resolved round without a `result:` is an error,
    and under `--since`, editing the threshold after the round left `draft` is an error — the
    field freezes at posting, like a proposal's filename freezes when it leaves draft.
+11. **Format is declared, never implied.** Markdown and the gauge audio render are the default;
+   video, deck and music are named by a human. An audience-facing render produced while
+   `reactions.md` has no content is Phase 11's ordering violated, and that has already happened
+   once. **Declared means named by a human in the request** — this gate is met verbally today and
+   becomes *auditable* only when the round record carries `format:`, which is the schema migration
+   flagged at the top of this file and not yet made.
+12. **A stale render is reported, not refreshed.** When a published render no longer matches the
+   script it came from, it goes in the staleness report with the date it diverged. Silently
+   re-rendering hides that what a reader saw and what the tree says are different, which is the
+   same error as quietly re-extracting a broken claim to a new line number.
 
 ## Will not
 
@@ -1132,6 +1299,28 @@ audio ranked over picture. Two prior positions were **not** overturned but now c
 that name what would overturn them: the small ask, and the ten-minute length — whose stated
 falsifier was **wrong**, since a completion curve cannot see viewers who never press play.
 
+**Revision 2026-08-24c, three modes and a format axis. N=0, and it is a revision by reading, not
+by running.** Two defects that had already fired, plus one gap that only became visible once they
+were separated:
+
+- **The schema could not record what turn 1 did.** `pitch_mode:` is defined as *which mode
+  produced this round's script* and holds one value, while turn 1 shipped artifacts from both
+  modes and labelled itself `full` over a crowd-order script.
+- **Phase 11's ordering did not hold.** *Production runs after Phase 3.5, never before* was
+  written down and broken by the next run: two videos against a `reactions.md` reading
+  `Status: NOT RUN`. Making audience-facing renders opt-in is that rule expressed as a default
+  rather than as prose, on the evidence that prose did not hold it. The gauge audio render stays
+  on by default, because separating instrument from artifact is the distinction Step 4b already
+  drew and the gauge is the only instrument here that has caught a real error.
+- **Nothing watched the renders.** Triggers 1 to 7 all watch content. The render check exists
+  because a script can move out from under a published video, and the staleness machinery, thorough
+  about claims, says nothing about renders.
+
+The third mode, elevator, is forked back from `gitwverse`'s Phase 10.5, added there the same day
+from the opposite direction. **None of this has run.** Two modes existed and one of them had never
+executed; there are now three, and the count of modes that have shipped anything to a reader is
+still zero.
+
 **The fork does not receive upstream revisions.** The next run there will break something in it,
 on the evidence of the previous seven, and we will not hear. Re-read and diff against the
 recorded commit deliberately or not at all.
@@ -1164,6 +1353,19 @@ recorded commit deliberately or not at all.
   be the **start rate against a shorter control**: the same pitch, same audience, offered at
   two lengths, comparing how many begin. Completion measures the format among people it already
   survived.
+- **The third mode.** Elevator is asserted to be a distinct reader: live, two-way, interruptible,
+  answered by a question rather than a decision or a pledge. If the card is only ever read
+  silently, or if what people ask after hearing it is what the two-minute already answers, then it
+  is a length and belongs in the narrative files rather than as a mode.
+- **The format axis.** It exists because one field could not record a turn where both modes
+  shipped. If no turn ever again produces artifacts in two modes, the axis is bookkeeping for a
+  single event. And if the audience-facing formats are requested on every run anyway, the default
+  is ceremony and the real default is video.
+- **The instrument-against-artifact line.** Gauge audio renders by default and video does not, on
+  the argument that one is a measurement and the other is for an audience. If a gauge render is
+  ever shipped to a reader unchanged, the line is not where this says it is.
+- **The render check.** Never fired. If renders in practice are always regenerated alongside
+  the script they came from, nothing goes stale and the check is dead weight.
 - **The six-turn backstop.** A guess with no evidence behind it.
 - **The threshold numbers.** 30 starts, 40%, 15% — derived from a binomial interval, never
   observed here.
