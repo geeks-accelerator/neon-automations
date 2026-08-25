@@ -892,9 +892,30 @@ def open_questions(data, living):
 def check_strays():
     """Files directly under docs/ are living documents -- the founding docs and
     the tree's own README. A dated filename there is an event that missed its
-    directory, and nothing else would catch it."""
+    directory, and nothing else would catch it.
+
+    Directories are the other half, and they used to fall through here silently.
+    The taxonomy is ten names; a directory outside it is not merely unvalidated,
+    it is *invisible* -- uncounted, unwalked, its links unchecked. That is worse
+    than the warning a subdirectory of a known kind already gets, because
+    nothing anywhere says the files exist. Found when a registry guide sat in
+    docs/guides/ referencing a script that did not exist, and no run complained.
+
+    A warning rather than an error: a tree may carry a directory deliberately,
+    and the remedy (move it, or teach the validator the name) is a judgement the
+    project makes once. Silence is the defect, not the directory."""
+    known = set(EVENTS) | set(LIVING)
     for name in sorted(os.listdir(DOCS)):
         path = os.path.join(DOCS, name)
+        if os.path.isdir(path):
+            if name in known or name.startswith("."):
+                continue
+            n = sum(1 for _, _, fs in os.walk(path) for f in fs if f.endswith(".md"))
+            warn(path, f"docs/{name}/ is not one of the ten directories -- its {n} markdown "
+                       f"file(s) are uncounted and their links unchecked. Move it under "
+                       f"{EVENT_DIRS}, a living directory, or outside docs/ if it is not a "
+                       f"document")
+            continue
         if not os.path.isfile(path) or not name.endswith(".md"):
             continue
         if DATED_PREFIX_RE.match(name):
