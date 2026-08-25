@@ -353,9 +353,18 @@ part architecture, part product design, part governance all at once, and splitti
 subject destroys more than it organizes — so a directory holds whole documents, never the
 pieces of one.
 
-Number them if they were written in sequence and each assumes the last; the generated index
-sorts a living directory ascending, so a numeric prefix preserves reading order for free.
-Filenames must be plain lowercase slugs either way — `01-concept.md`, not `01-CONCEPT.md`.
+**Do not number the filenames**, even when the documents were written in sequence and each
+assumes the last. A numeric prefix is a merge conflict waiting for the second agent to add a
+document to the same directory, and it goes stale the moment one is inserted in the middle —
+both of which cost more than the ordering is worth in a tree several agents share.
+
+The generated index sorts a living directory alphabetically, so it is a *list*, not an order.
+Put the reading order in the directory README, below the generated block where `apply_readme`
+preserves it. Changing the order is then one edit instead of N renames plus every reference
+that named a number.
+
+Filenames are plain lowercase slugs — `concept.md`, not `01-CONCEPT.md`. `LIVING_NAME_RE`
+rejects the uppercase form outright, so this is checked rather than merely conventional.
 
 When a passage in them stops holding and the *reasoning* is worth keeping, write a
 `decisions/` entry and cite it from the prose. Do not leave a superseded banner in place —
