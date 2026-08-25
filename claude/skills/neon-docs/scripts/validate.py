@@ -571,6 +571,46 @@ def check_research_modes_doc():
                                 "a scan declaring it would fail validation")
 
 
+def check_tooling_unpushed():
+    """Tooling commits that exist only here.
+
+    The skills are edited in one checkout and consumed as a pinned submodule by
+    every project, so an edit is worth nothing until it is pushed and the
+    pointers move. Two ways it silently is not:
+
+    A commit made on a **detached HEAD** belongs to no branch, and
+    `git push origin main` then pushes the stale local `main`, prints
+    "Everything up-to-date", and exits 0. Success output, no effect, and any
+    `&&` chain after it carries on. That happened on 2026-08-24 and was caught
+    two steps later by a bump that could not find the SHA it had just pushed.
+
+    Or an ordinary forgotten push, which is the same defect wearing a friendlier
+    face.
+
+    A detached HEAD **with no local commits is normal and stays silent** -- that
+    is exactly what a consumer's pinned submodule looks like, and warning there
+    would train people to ignore this.
+    """
+    tooling_repo = os.path.dirname(TOOLING)
+    # exists(), not isdir(): the tooling is a submodule in every consumer, and a
+    # submodule's .git is a *file* holding `gitdir: ...`. isdir() returned False
+    # for the only shape this check will ever run against.
+    if not os.path.exists(os.path.join(tooling_repo, ".git")):
+        return
+    ahead = _git_in(tooling_repo, "log", "--oneline", "origin/main..HEAD")
+    if not ahead:
+        return
+    n = len(ahead.splitlines())
+    branch = _git_in(tooling_repo, "rev-parse", "--abbrev-ref", "HEAD")
+    where = "on a detached HEAD, so they belong to no branch" if branch == "HEAD" \
+        else f"on {branch!r}"
+    warn(tooling_repo,
+         f"{n} tooling commit(s) not on origin/main, {where} -- projects pin a "
+         "SHA, so an unpushed edit reaches nobody. Push with "
+         "'git push origin HEAD:main'; note that 'git push origin main' from a "
+         "detached HEAD reports success and moves nothing")
+
+
 def check_shared_block(fix):
     """CLAUDE.md carries a duplicated block; make the duplication checked.
 
@@ -1072,6 +1112,7 @@ def main():
     check_strays()
     check_links()
     check_shared_block(args.fix)
+    check_tooling_unpushed()
     check_research_modes_doc()
     check_head_signed()
     if args.since:
