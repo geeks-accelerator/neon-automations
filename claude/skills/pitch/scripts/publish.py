@@ -29,6 +29,8 @@ import shutil
 import sys
 from pathlib import Path
 
+from paths import build_root
+
 CLAIM_RE = re.compile(r"^\|\s*(C-\d+)\s*\|\s*(.+?)\s*\|\s*`(\w+)`\s*\|\s*(.+?)\s*\|\s*$")
 TAG_CLASS = {"EXTRACTED": "ex", "RESEARCHED": "re", "ASSERTED": "as", "CHECKED": "ch"}
 
@@ -289,10 +291,14 @@ def main():
     # Built here rather than interpolated in the template, because each half is
     # a measurement that may not exist yet and "Round 1 - None" is worse than a
     # shorter sentence.
-    secs = duration(pitch / "two-minute-audio", "s")
-    mins = duration(pitch / "long-form-audio", "m")
+    # Renders live under build/pitch/<round-id>/, scoped to the round being
+    # published rather than to whatever ran last -- so republishing turn 1
+    # after turn 2 rendered still finds turn 1's video.
+    build = build_root(pitch, rec.stem)
+    secs = duration(build / "two-minute-audio", "s")
+    mins = duration(build / "long-form-audio", "m")
     cite = f"Round {turn}" + (f" &mdash; {secs}" if secs else "")
-    if mins and (pitch / "long-form-video" / "round.mp4").exists():
+    if mins and (build / "long-form-video" / "round.mp4").exists():
         cite += f' &middot; the full {mins}-minute version is <a href="media/full.mp4">here</a>.'
     else:
         cite += "."
@@ -310,12 +316,12 @@ def main():
     (out / "index.html").write_text(page(ctx), encoding="utf-8")
     (out / ".nojekyll").write_text("", encoding="utf-8")
 
-    for src, dst in [(pitch / "two-minute-video" / "round.mp4", "media/round.mp4"),
-                     (pitch / "long-form-video" / "round.mp4", "media/full.mp4")]:
+    for src, dst in [(build / "two-minute-video" / "round.mp4", "media/round.mp4"),
+                     (build / "long-form-video" / "round.mp4", "media/full.mp4")]:
         if src.exists():
             shutil.copy2(src, out / dst)
             print(f"  copied {dst}  ({src.stat().st_size/1_048_576:.1f} MB)")
-    first = sorted((pitch / "gamma-slides").glob("01-*.png"))
+    first = sorted((build / "gamma-slides").glob("01-*.png"))
     if first:
         shutil.copy2(first[0], out / "media" / "poster.png")
         print("  copied media/poster.png")

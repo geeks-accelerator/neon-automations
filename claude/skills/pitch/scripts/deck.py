@@ -27,6 +27,8 @@ import subprocess
 import sys
 from pathlib import Path
 
+from paths import build_dir
+
 W, H = 1920, 1080
 BG, FG, ACCENT, MUTED, RULE = "#0B1220", "#F5F1E8", "#E8A33D", "#7A8699", "#1E2A3E"
 FONT = "Helvetica, Arial, sans-serif"
@@ -200,7 +202,7 @@ def main():
     if not subprocess.run(["which", "rsvg-convert"], capture_output=True).returncode == 0:
         sys.exit("rsvg-convert not on PATH (brew install librsvg)")
 
-    out_dir = Path(args.out) if args.out else Path(args.deck).parent / f"{Path(args.deck).stem}-slides"
+    out_dir = Path(args.out) if args.out else build_dir(args.deck, f"{Path(args.deck).stem}-slides")
     out_dir.mkdir(parents=True, exist_ok=True)
 
     # Every card is regenerated, so anything already here is from a previous

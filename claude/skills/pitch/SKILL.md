@@ -905,8 +905,8 @@ the full gate.
   needs a recurring theme, and regenerating it throws away the sonic identity that makes a
   later episode recognisably the same series.
 
-  **So the theme is a source asset, not a build artifact** — committed, not gitignored, unlike
-  the audio, slides and video. Everything else in the pipeline is reproducible from tracked
+  **So the theme is a source asset, not a build artifact** — it stays in `docs/pitch/` and is
+  committed, unlike the audio, slides and video, which go to `build/pitch/<round-id>/`. Everything else in the pipeline is reproducible from tracked
   text; a theme regenerated from the same prompt comes back *different*, so treating it as
   derived would silently change the show on a fresh clone. The prompt is stored beside it.
 
@@ -1123,7 +1123,29 @@ renderers over two narratives is drift, and it happened — a 14-card storyboard
 reviewed. When one changes, change the other.
 
 docs/rounds/2026-08-24-turn-N.md  event, optional, one per turn
+
+build/pitch/2026-08-24-turn-N/    generated output. gitignored, regenerable
+├── two-minute-audio/             render.py -- segments, duration.json
+├── long-form-audio/
+├── gamma-slides/ full-slides/    gamma.py
+├── storyboard-slides/            deck.py
+└── two-minute-video/ long-form-video/   assemble.py -- round.mp4
 ```
+
+**Nothing generated goes in `docs/`.** `docs/pitch/` holds what a person writes and one source
+asset (`theme.mp3`); everything a script produces goes to `build/pitch/<round-id>/`, and every
+script takes `--out` if you want it elsewhere.
+
+**The round id in that path is the round record's own id**, not a parallel date-slug, and that
+is the whole point of scoping it. A round record is dated and permanent; it used to cite
+`docs/pitch/long-form-video/round.mp4`, a path the *next* turn overwrites. The record survived
+and the thing it attested to did not — a ledger whose citations are silently replaced. Renders
+now sit under the id of the round that produced them, so republishing turn 1 after turn 2 has
+rendered still finds turn 1's video.
+
+`build/` rather than `artifacts/` because `artifacts/` already means committed prose in these
+repos — side quests, observations, creative works. A directory name that means both derived
+output and kept writing means neither.
 
 † The top of `README.md` is the generated directory index (`--fix` maintains it); the two
 numbers and the staleness report are hand-written **below** the generated block, which the

@@ -35,6 +35,8 @@ import urllib.request
 import zipfile
 from pathlib import Path
 
+from paths import build_dir
+
 BASE = "https://public-api.gamma.app/v1.0"
 UA = "neon-pitch/1.0 (+https://github.com/geeks-accelerator/neon-automations)"
 
@@ -215,7 +217,7 @@ def main():
     if isinstance(export_url, list):
         export_url = export_url[0]
 
-    out_dir = Path(args.out) if args.out else src.parent / f"{src.stem}-slides"
+    out_dir = Path(args.out) if args.out else build_dir(src, f"{src.stem}-slides")
     files = download(export_url, out_dir)
     print(f"\n  {len(files)} file(s) -> {out_dir}")
     for f in files:

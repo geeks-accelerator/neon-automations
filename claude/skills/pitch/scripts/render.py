@@ -33,6 +33,8 @@ import urllib.error
 import urllib.request
 from pathlib import Path
 
+from paths import build_dir
+
 ELEVENLABS_BASE_URL = "https://api.elevenlabs.io/v1"
 DEFAULT_MODEL = "eleven_multilingual_v2"
 WPM = 150          # only for the estimate; a real render replaces it
@@ -254,7 +256,7 @@ def main():
         if not have(b):
             sys.exit(f"{b} not found on PATH (needed to concatenate and measure)")
 
-    out_dir = Path(args.out) if args.out else src.parent / f"{src.stem}-audio"
+    out_dir = Path(args.out) if args.out else build_dir(src, f"{src.stem}-audio")
     seg_dir = out_dir / "segments"
     seg_dir.mkdir(parents=True, exist_ok=True)
     cache_path = out_dir / "cache.json"

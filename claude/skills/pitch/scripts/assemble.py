@@ -23,6 +23,8 @@ import sys
 import tempfile
 from pathlib import Path
 
+from paths import build_dir
+
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import render as R          # one parser for the script, shared with the renderer
 import slides as S          # one parser for the storyboard, shared with the generator
@@ -79,8 +81,8 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     ap.add_argument("script", help="the pitch script (two-minute.md)")
     ap.add_argument("storyboard")
-    ap.add_argument("--audio", default=None, help="rendered narration (default: alongside script)")
-    ap.add_argument("--slides", default=None, help="slide directory (default: alongside storyboard)")
+    ap.add_argument("--audio", default=None, help="rendered narration (default: this round's build dir)")
+    ap.add_argument("--slides", default=None, help="slide directory (default: this round's build dir)")
     ap.add_argument("--out", default=None)
     ap.add_argument("--no-captions", action="store_true")
     ap.add_argument("--theme", default=None,
@@ -99,10 +101,10 @@ def main():
 
     script = Path(args.script)
     sb = Path(args.storyboard)
-    audio_dir = Path(args.audio) if args.audio else script.parent / f"{script.stem}-audio"
+    audio_dir = Path(args.audio) if args.audio else build_dir(script, f"{script.stem}-audio")
     full_audio = audio_dir / f"{script.stem}.mp3"
-    slide_dir = Path(args.slides) if args.slides else sb.parent / f"{sb.stem}-slides"
-    out = Path(args.out) if args.out else script.parent / f"{script.stem}-video" / "round.mp4"
+    slide_dir = Path(args.slides) if args.slides else build_dir(sb, f"{sb.stem}-slides")
+    out = Path(args.out) if args.out else build_dir(script, f"{script.stem}-video") / "round.mp4"
     out.parent.mkdir(parents=True, exist_ok=True)
 
     if not full_audio.exists():

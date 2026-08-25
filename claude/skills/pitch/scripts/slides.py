@@ -25,6 +25,8 @@ import urllib.error
 import urllib.request
 from pathlib import Path
 
+from paths import build_dir
+
 # Replicate sits behind Cloudflare, which answers a UA-less request with
 # HTTP 403 "error code: 1010" -- a browser-integrity block that reads exactly
 # like a rejected token. Send a User-Agent and it is a normal API.
@@ -216,7 +218,7 @@ def main():
         return 0
 
     token = get_token()
-    out_dir = Path(args.out) if args.out else sb.parent / f"{sb.stem}-slides"
+    out_dir = Path(args.out) if args.out else build_dir(sb, f"{sb.stem}-slides")
     out_dir.mkdir(parents=True, exist_ok=True)
     cache_path = out_dir / "cache.json"
     cache = json.loads(cache_path.read_text()) if cache_path.exists() else {}
