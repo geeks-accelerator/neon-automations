@@ -84,9 +84,12 @@ Past its horizon a scan **warns on every validator run and blocks `--preflight`*
 by re-running that mode and superseding, or by setting `status: superseded` if it no longer
 bears on anything.
 
-Adding a mode is an edit to `RESEARCH_MODES` in the validator and nothing else — the schema
-check, the staleness sweep, and the preflight gate all read from that table, so a new kind of
-scan becomes checkable without touching any caller.
+Adding a mode is an edit to `RESEARCH_MODES` in the validator **and the table above** — the
+schema check, the staleness sweep, and the preflight gate all read from the code, so no
+*caller* changes, but this table is a second copy of those numbers and the validator errors
+if the two disagree. It used to say "and nothing else", which was wrong in the one way that
+matters: a horizon correct in the code and stale here sends someone to write a scan that
+expires on a schedule they did not choose.
 
 **Scan one mode at a time.** A record answering a single kind of question can be superseded
 on its own schedule; a scan mixing pricing and landscape expires on the shorter horizon and

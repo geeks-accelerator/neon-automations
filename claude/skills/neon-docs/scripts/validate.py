@@ -522,8 +522,53 @@ def cross_check(data):
 TOOLING = os.path.dirname(os.path.dirname(os.path.dirname(
     os.path.dirname(os.path.realpath(__file__)))))
 SHARED_SRC = os.path.join(TOOLING, "CLAUDE-shared.md")
+RESEARCH_SKILL = os.path.join(TOOLING, "skills", "research", "SKILL.md")
+MODE_ROW_RE = re.compile(r"^\|\s*`([a-z]+)`\s*\|\s*(\d+)d\s*\|\s*([^|]+?)\s*\|\s*$", re.M)
 SHARED_BEGIN, SHARED_END = "<!-- shared:begin -->", "<!-- shared:end -->"
 SHARED_RE = re.compile(re.escape(SHARED_BEGIN) + r".*?" + re.escape(SHARED_END), re.S)
+
+
+def check_research_modes_doc():
+    """The research skill restates RESEARCH_MODES; make that duplication checked.
+
+    The table is worth having in the prose -- an agent writing a scan needs the
+    modes and horizons without reading Python. But the skill also claimed that
+    adding a mode is "an edit to RESEARCH_MODES in the validator and nothing
+    else", which was false while a second copy of the table sat in the skill
+    itself. Two homes for one set of numbers, and the doc asserting there was
+    one.
+
+    Same remedy as the shared CLAUDE block: keep the copy, check it. A mismatch
+    errors rather than warns, because a wrong horizon in the doc sends someone
+    to write a scan that expires on a schedule they did not intend, and a mode
+    that is in the table but not the code fails validation at the far end.
+
+    Absent skill: nothing to check. A project may vendor neon-docs alone.
+    """
+    if not os.path.exists(RESEARCH_SKILL):
+        return
+    try:
+        text = open(RESEARCH_SKILL, encoding="utf-8").read()
+    except OSError:
+        return
+    documented = {m.group(1): (int(m.group(2)), m.group(3))
+                  for m in MODE_ROW_RE.finditer(text)}
+    if not documented:
+        err(RESEARCH_SKILL, "no research mode table found -- it should carry one "
+                            "row per RESEARCH_MODES entry as `| `mode` | Nd | covers |`")
+        return
+    for mode, (days, covers) in RESEARCH_MODES.items():
+        if mode not in documented:
+            err(RESEARCH_SKILL, f"mode {mode!r} is in RESEARCH_MODES but not the table")
+        elif documented[mode][0] != days:
+            err(RESEARCH_SKILL, f"mode {mode!r} horizon is {documented[mode][0]}d in the "
+                                f"table and {days}d in RESEARCH_MODES")
+        elif documented[mode][1] != covers:
+            err(RESEARCH_SKILL, f"mode {mode!r} description has drifted from RESEARCH_MODES")
+    for mode in documented:
+        if mode not in RESEARCH_MODES:
+            err(RESEARCH_SKILL, f"mode {mode!r} is documented but not in RESEARCH_MODES -- "
+                                "a scan declaring it would fail validation")
 
 
 def check_shared_block(fix):
@@ -1027,6 +1072,7 @@ def main():
     check_strays()
     check_links()
     check_shared_block(args.fix)
+    check_research_modes_doc()
     check_head_signed()
     if args.since:
         check_history(args.since)
