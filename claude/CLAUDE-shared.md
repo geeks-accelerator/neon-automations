@@ -12,7 +12,7 @@ most projects never do. Held to their schema when present, absent without compla
 other eight are the shape of the record and every project keeps them.
 
 Everything outside the event directories is a living document: both READMEs, every
-directory README, this file, and any founding docs at the root of `docs/`. Git is their
+directory README, this file, and the founding docs wherever they are filed. Git is their
 event log, so superseded passages get rewritten rather than banner-marked; reasoning worth
 keeping on its own earns a `decisions/` entry.
 

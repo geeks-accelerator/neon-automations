@@ -341,13 +341,21 @@ having read it.
 
 ## The founding docs
 
-`docs/01-CONCEPT.md` through `05-MVP-SCOPE.md` sit at the root of `docs/`. They are **living
-documents** — rewritten in place as thinking changes, with no dates and no supersession
-banners. Git holds what they used to say.
+Most projects accumulate a handful of long documents that state the whole idea — what it is,
+how it works, what already exists, how the work gets done. They are **living documents**:
+rewritten in place as thinking changes, with no dates and no supersession banners. Git holds
+what they used to say.
 
-They stay at the root rather than being filed into subdirectories because the split is by
-lifecycle, not by topic, and `04-OPERATING-MODEL` alone is part architecture, part product
-design, part governance. Decomposing it by subject would destroy more than it organizes.
+**File them whole, and file them by lifecycle.** A founding document that describes where the
+project is going belongs in `vision/`; one that synthesizes how the system works today belongs
+in `architecture/`. What matters is that they move **intact**. These documents are usually
+part architecture, part product design, part governance all at once, and splitting one by
+subject destroys more than it organizes — so a directory holds whole documents, never the
+pieces of one.
+
+Number them if they were written in sequence and each assumes the last; the generated index
+sorts a living directory ascending, so a numeric prefix preserves reading order for free.
+Filenames must be plain lowercase slugs either way — `01-concept.md`, not `01-CONCEPT.md`.
 
 When a passage in them stops holding and the *reasoning* is worth keeping, write a
 `decisions/` entry and cite it from the prose. Do not leave a superseded banner in place —
