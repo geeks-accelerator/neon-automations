@@ -62,6 +62,17 @@ anyone can verify from a clone.
 inside the repo, and the SHA is pinned here — a push to the tooling changes nothing until
 the pointer is bumped.
 
+```bash
+git submodule update --remote automations && git add automations && git commit
+git submodule foreach --quiet 'echo "$name: $(git status -sb | head -1)"'
+```
+
+**The second line is the one worth running.** `.gitmodules` carries `branch = main` and
+`update = merge` so a submodule lands on a branch rather than a detached HEAD, and this says
+whether it did. A commit made on a detached HEAD belongs to no branch, so `git push origin
+main` pushes the stale local branch, prints *"Everything up-to-date"*, and exits 0 — success
+output, nothing moved.
+
 Edit skills in the tooling repo, never through a project's copy: a change made through the
 link lands upstream, but a copy silently forks it. After bumping, run
 `validate.py --fix` in every consumer, since a conventions change can leave the duplicated
