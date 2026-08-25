@@ -442,6 +442,17 @@ def generalizes(path):
     return bool(GENERAL_RE.search(body))
 
 
+def tag_exists(name):
+    """True when `name` is a git tag in this repository.
+
+    True as well when git cannot answer -- no repository, no toolchain, a
+    shallow checkout without tags. A missing tool must not turn into an
+    accusation that a release was never cut.
+    """
+    out = _git_in(ROOT, "tag", "--list", name)
+    return True if out is None else out != ""
+
+
 def cross_check(data):
     proposals = data["proposals"]
 
@@ -452,6 +463,19 @@ def cross_check(data):
                       "work nobody funded")
         if fm.get("status") == "shipped" and not fm.get("release"):
             err(path, "shipped plans need a release tag; the attestation service reads it")
+        # ...and the tag has to exist. Checking only that the field is present
+        # accepts a plan claiming `shipped` against a tag nobody cut, which is
+        # the same shape as a documented verification command nobody runs: the
+        # attestation service reads this name and finds nothing.
+        rel = fm.get("release")
+        if rel and not tag_exists(str(rel)):
+            err(path, f"release tag {rel!r} does not exist -- `git tag` does not list it, "
+                      f"so the delivery this plan claims cannot be verified")
+        # A plan may cite observations as a list. The singular field is read
+        # above for issues; without this the plural silently referenced nothing.
+        for ref in (fm.get("observations") or []):
+            if ref not in data["observations"]:
+                err(path, f"observation {ref!r} does not exist in docs/observations")
 
     by_proposal = {}
     for _, fm in data["plans"].values():
