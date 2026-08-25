@@ -55,8 +55,8 @@ disagrees with how something works can find out why it was chosen without asking
 
 **The classification is total.** The seven event directories are the complete list of where
 events live. *Everything else in the repo is a living document* — both `README.md`s, every
-directory README, `CLAUDE.md`, this file, and the numbered founding docs at the root of
-`docs/`. None of them carry dates in their filenames, and all of them get rewritten in place.
+directory README, `CLAUDE.md`, this file, and the founding docs wherever they are filed. None
+of them carry dates in their filenames, and all of them get rewritten in place.
 
 **Git is the event log for living documents.** The commit history is already append-only,
 signed, and complete, so there is no need to mark superseded passages in place — rewrite the

@@ -607,6 +607,17 @@ count, the commit count, and "nothing uncommitted" — so tree-shape claims are 
 scanned SHA and at no commit after. Pin them to the SHA and list them in the first-run
 staleness report as breaking on the pitch's own first commit.
 
+**Demoting a claim is not finished until the prose that states it moves too.** A count also
+appears in `scan.md` and `what-exists-now.md`, and *those* copies are narrative — outside the
+ledger, so nothing re-checks them. Demote `C-003` three times and the ledger walks away from
+two documents still asserting the first value as current fact.
+
+Observed: live-neon on 2026-08-24 carried three live values for one measurement — narratives
+at 27 markdown, `C-003` at 140 after two demotions, and `git ls-files` at 147. So on every
+demotion of a counting claim, **grep the narrative documents for the old value before writing
+the report**, and re-extract each one that still states it. The arithmetic-discipline rule
+above already says numbers in prose are claims; this is the step that acts on it.
+
 ---
 
 # Part 4: turn
