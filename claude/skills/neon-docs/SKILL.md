@@ -381,6 +381,13 @@ directory, where `status` exists and `shipped` is expressible. Get it backwards 
 directory fills with one permanent file per initiative, none of which is allowed to end —
 which is the failure mode this test exists to catch, because nothing in the validator will.
 
+**The same test applies to the filename.** Name a living document for its *job*, not for the
+stage it currently describes — `scope.md`, not `mvp-scope.md`; `repo-topology.md`, not
+`three-repo-topology.md`. The stage is content, and content here gets rewritten; the filename
+is identity, and every inbound reference depends on it holding. A name that encodes the
+current stage guarantees a rename the day that stage ends, which is the one edit a living
+directory exists to avoid.
+
 **A scope boundary is the case worth naming**, because it reads like an epic and is not one.
 "Where the first build stops" never completes; either it holds or the boundary moves and you
 rewrite the sentence. It is also singular — a project has one, not one per initiative.
