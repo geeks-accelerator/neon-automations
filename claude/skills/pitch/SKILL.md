@@ -1004,11 +1004,25 @@ note when there is no history to read.
 ## Step 6b — publish, if the project is private
 
 `publish.py` generates a static site from `docs/pitch/` and the round record: the video, the
-itemized ask, the frozen threshold, and the full claims ledger.
+itemized ask, the frozen threshold, and the full claims ledger — plus a **prototype**, if the
+round carries one.
 
 ```bash
 python3 .claude/skills/pitch/scripts/publish.py <project> --out <publishing-repo>
 ```
+
+**A round may carry a prototype, and most will not.** Drop a self-contained static page at
+`build/pitch/<round-id>/prototype/index.html` and `publish.py` copies the directory and links it
+under the video. It is optional by construction: a round that ships code against an existing
+product has screenshots, not drawings, and has nothing to put here. A round funding something
+that **does not exist yet** does — and a drawing is the cheapest way to let a backer argue with
+the thing before it is written rather than after.
+
+Two rules make it worth having. **Self-contained**: no external scripts, fonts or hosts. A
+round's artifacts have to be readable by a stranger with a browser and nothing else, so a link
+to an editor or a design tool behind a login is not a prototype, it is a promise. And **build it
+from the same tokens the page uses** — if the drawings and the round page disagree about what
+the product looks like, the drawings are the ones a reader will believe.
 
 **The publishing surface is a target, not a source.** It is generated; editing it is drift. It
 extracts *data* — claim rows, ask lines, the threshold — rather than converting markdown,

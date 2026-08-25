@@ -196,6 +196,7 @@ footer{{margin-top:60px;padding-top:22px;border-top:1px solid var(--line);color:
 <source src="media/round.mp4" type="video/mp4">
 </video>
 <p class=cite>{ctx['cite']}</p>
+{ctx['prototype']}
 
 <h2>What this round costs</h2>
 <p>Itemized from public list prices. Not a target — a receipt.</p>
@@ -304,6 +305,20 @@ def main():
         cite += "."
     ctx["cite"] = cite
 
+    # A round may carry a PROTOTYPE -- a self-contained static page showing what
+    # the funded thing would look like. Optional by construction: most rounds
+    # ship code against an existing product and have nothing to draw. It is
+    # copied rather than linked to an external host because a round's artifacts
+    # have to be readable by a stranger with a browser and nothing else -- an
+    # editor link behind an org boundary is not a public artifact.
+    proto_src = build / "prototype"
+    ctx["prototype"] = ""
+    if (proto_src / "index.html").exists():
+        ctx["prototype"] = (
+            '<p class=cite style="margin-top:-6px">'
+            '<a href="prototype/">See the screens</a> &mdash; eight of them, covering one full '
+            'turn. Drawings rather than screenshots: none of it is built yet.</p>')
+
     print(f"  {len(claims)} claims, {ex} extracted ({ctx['pct']}%)")
     print(f"  riskiest {ctx['risk']} of {ctx['risk_n']}   ask lines: {len(ctx['ask'])}")
     print(f"  threshold: {ctx['threshold'][:64]}")
@@ -321,6 +336,11 @@ def main():
         if src.exists():
             shutil.copy2(src, out / dst)
             print(f"  copied {dst}  ({src.stat().st_size/1_048_576:.1f} MB)")
+    if (proto_src / "index.html").exists():
+        shutil.copytree(proto_src, out / "prototype", dirs_exist_ok=True)
+        n = sum(1 for _ in (out / "prototype").rglob("*") if _.is_file())
+        print(f"  copied prototype/  ({n} file(s))")
+
     first = sorted((build / "gamma-slides").glob("01-*.png"))
     if first:
         shutil.copy2(first[0], out / "media" / "poster.png")
