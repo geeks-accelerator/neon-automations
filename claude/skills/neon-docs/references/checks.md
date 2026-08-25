@@ -6,6 +6,13 @@ only under `--preflight`.
 
 Derived from the source; if the two disagree, the source is right and this file is a bug.
 
+**One structural limit, worth knowing before you read the rest.** `entries()` lists each
+directory one level deep, so a *subdirectory* under an event directory is checked by nothing
+here — not naming, not frontmatter, not cross-references. That is deliberate: a corpus filed
+under `docs/research/` is not N research records and should not need N dated filenames. It now
+warns once per directory naming what is skipped, because invisible and silent are different
+things, and a record misfiled one level down used to look validated.
+
 ---
 
 ## Naming and identity
@@ -15,7 +22,8 @@ Derived from the source; if the two disagree, the source is right and this file 
 | Event filename is `YYYY-MM-DD-slug.md` | error | rename; events are dated because they happened on a day |
 | Event `id` matches the filename stem | error | make them agree — a file disagreeing with itself is unusable to anything reading the tree |
 | Filename date matches the record's date field (`opened` / `decided` / `conducted` / `first_seen`) | error | fix whichever is wrong |
-| Living filename is a plain slug, no date prefix | error | a dated record is an event; move it to an event directory |
+| Living filename is a plain lowercase slug, no date prefix | error | `LIVING_NAME_RE` is `^[a-z0-9][a-z0-9-]*\.md$` — **uppercase is rejected**, so `01-CONCEPT.md` fails inside a living directory |
+| Living filename encodes a stage rather than a job | *not checked* | judgement, not a rule — but `mvp-scope.md` goes stale the day the boundary moves, and renaming it costs every inbound reference |
 | Living record carries no `opened` / `status` / `decided` | error | same — those fields mean it is an event |
 | No dated file at the `docs/` root | error | move it into an event directory |
 
@@ -74,6 +82,8 @@ tools eating the documents that describe them.
 | Relative links resolve on disk | error | fix or remove |
 | No relative link crosses a **symlink** | error | link the target repo's URL — GitHub renders a symlink as a text blob, so it 404s on the web |
 | No relative link reaches **into a submodule** | error | link the target repo's URL — the web UI 404s on deep paths into one |
+| Link text names a `.md` file the link does not point at | warn | retitle, or fix the target — a citation naming one document and pointing at another. Fires only when the text contains something filename-shaped, so prose text ("the decision", "here") is never a candidate |
+| An absolute `github.com/<org>/<repo>/blob/…` URL whose repo is checked out locally, whose path is missing there | warn | the other side renamed something. Warn and not error because the local checkout sits at whatever commit its pointer names, not necessarily the `<ref>` in the URL |
 
 The last two exist because a filesystem check passes links that are dead for anyone browsing
 on GitHub. See the observation on
@@ -96,6 +106,11 @@ gating regeneration on a clean run would make the one command that repairs it re
 ## History rules — `--since REF` only
 
 Applied when comparing against a base ref, because the tree alone cannot show them.
+
+**Both ways they can fail to run now say so.** An unresolvable base is skipped deliberately —
+a new branch has nothing to compare against — and warns. A base that resolves and then fails
+to diff also warns, where it used to return silently: all three rules stopping with no output
+is the one way a gate switches itself off without anyone noticing.
 
 | check | level | remedy |
 |---|---|---|

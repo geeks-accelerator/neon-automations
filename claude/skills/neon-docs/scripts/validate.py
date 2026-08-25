@@ -221,14 +221,36 @@ def check_date(path, field, value):
 
 
 def entries(kind):
+    """The .md files directly inside docs/<kind>/ -- one level, not a walk.
+
+    A subdirectory is therefore invisible to every check in this file: naming,
+    frontmatter, ids, cross-references, all of it. That is deliberate, because
+    a corpus filed under an event directory is a legitimate shape -- an 80-file
+    research distillation is not eighty research records -- and recursing would
+    demand every one of them carry a dated filename and full frontmatter.
+
+    But invisible and silent are different things. The subtree used to pass
+    without a word, so a record misfiled one level down looked validated and
+    was not. It now warns once per directory, naming what is being skipped.
+    """
     d = os.path.join(DOCS, kind)
     if not os.path.isdir(d):
         if kind not in OPTIONAL:
             err(d, "directory is missing")
         return
+    subdirs = []
     for name in sorted(os.listdir(d)):
+        full = os.path.join(d, name)
         if name.endswith(".md") and name != "README.md":
-            yield name, os.path.join(d, name)
+            yield name, full
+        elif os.path.isdir(full) and not name.startswith("."):
+            n = sum(1 for _, _, fs in os.walk(full) for f in fs if f.endswith(".md"))
+            if n:
+                subdirs.append(f"{name}/ ({n})")
+    if subdirs:
+        warn(d, "not validated -- entries() reads one level, so nothing in "
+                f"{', '.join(subdirs)} is checked for naming, frontmatter or "
+                "cross-references. A corpus belongs here; a record does not")
 
 
 def collect_events(kind):
@@ -532,6 +554,13 @@ def check_shared_block(fix):
 
 
 LINK_RE = re.compile(r"\[[^\]]*\]\(([^)\s]+)(?:\s+\"[^\"]*\")?\)")
+# Same shape, keeping the link text. Separate rather than a second capture
+# group on LINK_RE, whose .findall() callers expect a flat list of targets.
+LINK_TEXT_RE = re.compile(r"\[([^\]]*)\]\(([^)\s]+)(?:\s+\"[^\"]*\")?\)")
+# A markdown filename appearing inside link text -- "[scope.md § X](...)".
+MD_IN_TEXT_RE = re.compile(r"(?<![\w/.-])([a-z0-9][\w.-]*\.md)\b")
+# github.com/<org>/<repo>/(blob|tree)/<ref>/<path>
+GH_URL_RE = re.compile(r"https://github\.com/([^/]+)/([^/]+)/(?:blob|tree)/[^/]+/(.+?)(?:#.*)?$")
 
 
 def web_invisible(base, target):
@@ -560,6 +589,101 @@ def web_invisible(base, target):
     return None
 
 
+def _origin_slug(path):
+    """`org/repo` for a checkout, from its origin remote. None if unknown."""
+    url = _git_in(path, "config", "--get", "remote.origin.url")
+    if not url:
+        return None
+    m = re.search(r"github\.com[:/]([^/]+)/(.+?)(?:\.git)?\s*$", url)
+    return f"{m.group(1)}/{m.group(2)}" if m else None
+
+
+def _git_in(cwd, *args):
+    import subprocess
+    try:
+        r = subprocess.run(["git", "-C", cwd, *args],
+                           capture_output=True, text=True, timeout=20)
+        return r.stdout.strip() if r.returncode == 0 else None
+    except (OSError, subprocess.TimeoutExpired):
+        return None
+
+
+_LOCAL_REPOS = None
+
+
+def local_repos():
+    """`{org/repo: local path}` for checkouts this run can actually read.
+
+    Absolute GitHub URLs are the prescribed way to link across a repo boundary
+    -- a relative link into a submodule 404s on the web. The cost is that
+    check_links skips them entirely (reaching the network would be slow, flaky,
+    and useless for a private repo), so the fix for one class of broken link
+    created a class nothing checks at all: three renames on 2026-08-24 left six
+    stale cross-repo URLs and every run stayed green.
+
+    Where the target repo is on disk -- as a submodule, as the parent of this
+    one, or as this repo itself -- the path can be checked without a network
+    call. A miss only warns: the local checkout sits at whatever commit its
+    pointer names, which is not necessarily the `<ref>` in the URL.
+    """
+    global _LOCAL_REPOS
+    if _LOCAL_REPOS is not None:
+        return _LOCAL_REPOS
+    repos = {}
+    for base in (ROOT, os.path.dirname(ROOT)):
+        slug = _origin_slug(base)
+        if slug:
+            repos.setdefault(slug, base)
+        mods = _git_in(base, "config", "--file", os.path.join(base, ".gitmodules"),
+                       "--get-regexp", r"^submodule\..*\.path$") or ""
+        for line in mods.splitlines():
+            key, _, rel = line.partition(" ")
+            sub = os.path.join(base, rel)
+            if os.path.isdir(sub):
+                s = _origin_slug(sub)
+                if s:
+                    repos.setdefault(s, sub)
+    _LOCAL_REPOS = repos
+    return repos
+
+
+def check_cross_repo_url(path, target):
+    """An absolute GitHub URL whose repo is on disk must resolve there."""
+    m = GH_URL_RE.match(target)
+    if not m:
+        return
+    org, repo, rel = m.group(1), m.group(2), m.group(3)
+    base = local_repos().get(f"{org}/{repo}")
+    if not base:
+        return
+    if not os.path.exists(os.path.join(base, rel)):
+        warn(path, f"cross-repo link {target} -- {rel} does not exist in the "
+                   f"local {org}/{repo} checkout. Renames on the other side of "
+                   "a repo boundary are invisible to a link check")
+
+
+def check_link_text(path, text, target):
+    """Does the link text name a different file than the link points at?
+
+    Rewriting a link's target and leaving its text is a silent way to produce a
+    citation that names one document and points at another. Three of these
+    existed at once on 2026-08-24, from an edit that retargeted anchors into
+    freshly extracted records: `[scope.md § The treasury pays direct]` pointing
+    at `decisions/2026-08-23-the-treasury-pays-direct.md`.
+
+    Narrow on purpose. It fires only when the text contains something shaped
+    like a markdown filename, so ordinary prose text -- "the decision", "docs",
+    "here" -- is never a candidate and cannot false-positive.
+    """
+    named = MD_IN_TEXT_RE.findall(text)
+    if not named:
+        return
+    want = os.path.basename(target.split("#", 1)[0]).lower()
+    if want and not any(n.lower() == want for n in named):
+        warn(path, f"link text names {named[0]!r} but the link points at "
+                   f"{want!r} -- retargeted without retitling?")
+
+
 def check_links():
     """Every relative markdown link must resolve -- on disk AND on the web UI.
 
@@ -586,8 +710,11 @@ def check_links():
         path = os.path.join(dirpath, name)
         with open(path, encoding="utf-8") as fh:
             text = fh.read()
-        for target in LINK_RE.findall(text):
-            if target.startswith(("http://", "https://", "mailto:", "#")):
+        for label, target in LINK_TEXT_RE.findall(text):
+            if target.startswith(("http://", "https://")):
+                check_cross_repo_url(path, target)
+                continue
+            if target.startswith(("mailto:", "#")):
                 continue
             bare = target.split("#", 1)[0]
             resolved = os.path.normpath(os.path.join(dirpath, bare))
@@ -598,6 +725,8 @@ def check_links():
             if why:
                 err(path, f"link {target} {why} -- it resolves on disk but 404s "
                           "on GitHub's web UI; link the target repo's URL instead")
+                continue
+            check_link_text(path, label, target)
 
 
 OPEN_STATES = {"draft", "open", "funded", "approved", "building",
@@ -789,6 +918,14 @@ def check_history(base):
         return
     diff = _git("diff", "--name-status", "-M", f"{base}...HEAD", "--", "docs/")
     if diff is None:
+        # Warns rather than returning quietly, unlike the branch above it,
+        # which skips deliberately: no base to compare against is the normal
+        # state of a new branch. Reaching here means git resolved the ref and
+        # then failed anyway -- an error, a timeout, a missing binary -- and
+        # all three history rules stop running. A check that can silently
+        # switch itself off is one nobody notices is off.
+        warn(os.path.join(ROOT, ".git"),
+             f"git diff against {base!r} failed -- history checks skipped")
         return
 
     event_dirs = tuple(f"docs/{k}/" for k in EVENTS)
