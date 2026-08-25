@@ -274,8 +274,16 @@ actions behind one sequence, which is precisely the defect that `pitch_mode` hol
 for two axes already produced. A list, like a field, should say one thing.
 
 **A render no longer matches its script.** `render.py` caches segments by content hash —
-`cache.json` records `sha256(model|voice|text)` per segment — so the detector already exists as
-data and nothing reads it for this. When a published audio, video or deck was rendered from a
+`cache.json` records `sha256(model|voice|text)` per segment — and `--check` reads it:
+
+```bash
+python3 .claude/skills/pitch/scripts/render.py docs/pitch/two-minute.md \
+    --check --voice <the id it was rendered with>
+```
+
+It reports per segment — matched, `DIVERGED`, `MISSING` (in the script, never rendered), or
+`ORPHANED` (rendered, no longer in the script) — spends nothing, and exits 1 on any of the
+three, so it works as a gate. **It never re-renders.** When a published audio, video or deck was rendered from a
 script that has since moved, that render is stale in exactly the sense a demoted claim is stale:
 true when made, unverified now. It goes in the staleness report with the date it diverged, and
 it is **not silently re-rendered**, because re-rendering hides that what a reader saw and what
@@ -698,12 +706,18 @@ slides is not.
 
 ### Four parts, not seven slides
 
-| segment | timing |
-|---|---|
-| **Hook** — the problem, arrestingly | 0–8s |
-| **Problem** — why it is worth caring about | 8–30s |
-| **Solution** — show it; benefits paired to features | 30–90s |
-| **Ask** — one-sentence backstory, then what the money buys, itemized, then the cheapest next step | final 10–15s |
+| segment | share of the whole | at a 90s target |
+|---|---|---|
+| **Hook** — the problem, arrestingly | ~10% | 0–9s |
+| **Problem** — why it is worth caring about | ~15% | 9–22s |
+| **Solution** — show it; benefits paired to features | ~60% | 22–76s |
+| **Ask** — one-sentence backstory, then what the money buys, itemized, then the cheapest next step | ~15% | final 14s |
+
+**Shares, because the total is a measurement and not a setting.** These were absolute seconds
+running 0–8 / 8–30 / 30–90 with a *"final 10–15s"* Ask — which does not close: a Solution
+ending at 90 leaves nothing before it. The first real script came in at **80.8s** measured
+(8.3 / 11.9 / 44.3 / 16.3), close to these proportions and nowhere near those seconds, because
+a render lands where the voice lands. Cut against the shares and check the measurement.
 
 **This is not the investor order, and that order is not wrong — it is full mode's.** Problem →
 solution → market → traction → business model → team → ask is researched for partners running
@@ -906,9 +920,10 @@ the full gate.
   later episode recognisably the same series.
 
   **So the theme is a source asset, not a build artifact** — it stays in `docs/pitch/` and is
-  committed, unlike the audio, slides and video, which go to `build/pitch/<round-id>/`. Everything else in the pipeline is reproducible from tracked
-  text; a theme regenerated from the same prompt comes back *different*, so treating it as
-  derived would silently change the show on a fresh clone. The prompt is stored beside it.
+  committed, unlike the audio, slides and video, which go to `build/pitch/<round-id>/`.
+  Everything else in the pipeline is reproducible from tracked text; a theme regenerated from
+  the same prompt comes back *different*, so treating it as derived would silently change the
+  show on a fresh clone. The prompt is stored beside it.
 
   **Set the bed level by measuring, not by ear-guessing a gain.** A fixed `volume=` multiplier
   strands a generated theme's sparse opening — the first attempt put it 30 LU under the
@@ -938,6 +953,27 @@ the full gate.
 
   Everything before the first `---` in an outline is **preamble** and is not sent — that is
   where the file's own title and its segment→timing mapping live.
+
+**The produce commands, in order.** Every one takes `--out`; the defaults resolve to
+`build/pitch/<round-id>/` via `paths.py`, so pass it only to override. Three of these five had
+no invocation written down anywhere until now, which made the skill readable and not runnable.
+
+```bash
+# theme — once per project, then never again
+python3 .claude/skills/pitch/scripts/music.py --dry-run
+
+# slides — pick one route
+python3 .claude/skills/pitch/scripts/gamma.py  docs/pitch/deck-outline.md --dry-run
+python3 .claude/skills/pitch/scripts/deck.py   docs/pitch/storyboard.md   --dry-run
+python3 .claude/skills/pitch/scripts/slides.py docs/pitch/storyboard.md   --dry-run
+
+# assemble — slides timed from the measured audio, not the storyboard's targets
+python3 .claude/skills/pitch/scripts/assemble.py \
+    docs/pitch/two-minute.md docs/pitch/storyboard.md --no-captions --dry-run
+```
+
+Drop `--dry-run` to spend money and write files. `music.py` and `slides.py` also take
+`--force`, which is the only way past their "already exists" guard.
 
 **Binary dependencies.** The scripts are stdlib-only in Python, but three shell out:
 `deck.py` needs **`rsvg-convert`** (`brew install librsvg` / `apt install librsvg2-bin`), and

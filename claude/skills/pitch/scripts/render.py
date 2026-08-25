@@ -211,6 +211,68 @@ def report(sections, measured=None):
 
 # --- commands ----------------------------------------------------------------
 
+def check_render(src, sections, args):
+    """Does the existing render still match the script it was made from?
+
+    The skill has described this check for as long as the cache has existed --
+    "the detector already exists as data and nothing reads it for this" -- and
+    nothing did. cache.json records sha256(model|voice|text)[:16] per segment,
+    which is exactly the question, already computed and already written down.
+
+    A divergence is reported, never repaired. Re-rendering here would hide that
+    what an audience heard and what the tree says have come apart, which is the
+    thing worth knowing; a stale render is stale in the same sense as a demoted
+    claim -- true when made, unverified now.
+
+    The digest covers voice and model as well as text, so a voice change reads
+    as divergence too. That is correct for *this render no longer matches* and
+    wider than *the script moved*, so the report says which segments differ and
+    leaves the reading to whoever asked.
+
+    Exit 1 on any divergence, so this is usable as a gate.
+    """
+    out_dir = Path(args.out) if args.out else build_dir(src, f"{src.stem}-audio")
+    cache_path = out_dir / "cache.json"
+    if not cache_path.exists():
+        print(f"  no render to check: {cache_path} does not exist")
+        return 0
+    try:
+        cache = json.loads(cache_path.read_text())
+    except (OSError, json.JSONDecodeError) as e:
+        sys.exit(f"cannot read {cache_path}: {e}")
+
+    if not args.voice:
+        print("  note: no --voice given, so the voice half of every digest is empty.\n"
+              "        Every segment will read as diverged. Pass the voice it was rendered with.")
+
+    seen, diverged, missing = set(), [], []
+    for idx, (name, text) in enumerate(sections, 1):
+        seg = f"{idx:02d}-{re.sub(r'[^a-z0-9]+', '-', name.lower())[:30]}.mp3"
+        seen.add(seg)
+        digest = hashlib.sha256(f"{args.model}|{args.voice}|{text}".encode()).hexdigest()[:16]
+        if seg not in cache:
+            missing.append((seg, name))
+        elif cache[seg] != digest:
+            diverged.append((seg, name))
+    orphaned = sorted(set(cache) - seen)
+
+    ok = len(sections) - len(diverged) - len(missing)
+    print(f"  {ok}/{len(sections)} segments match the render in {out_dir.name}/")
+    for seg, name in diverged:
+        print(f"    DIVERGED  {seg}  ({name}) -- script, voice or model moved since it rendered")
+    for seg, name in missing:
+        print(f"    MISSING   {seg}  ({name}) -- in the script, never rendered")
+    for seg in orphaned:
+        print(f"    ORPHANED  {seg} -- rendered, no longer in the script")
+
+    if diverged or missing or orphaned:
+        print("\n  Not re-rendered on purpose. A stale render is stale the way a demoted\n"
+              "  claim is: true when made, unverified now. Put it in the staleness report\n"
+              "  with the date it diverged, then re-render deliberately.")
+        return 1
+    return 0
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     ap.add_argument("script", nargs="?", default=None,
@@ -219,7 +281,9 @@ def main():
                     help="print the account's voices and exit; costs nothing")
     ap.add_argument("--dry-run", action="store_true",
                     help="parse and report only; no API key, no ffmpeg, no cost")
-    ap.add_argument("--out", default=None, help="output directory (default: alongside the script)")
+    ap.add_argument("--out", default=None, help="output directory (default: this round's build dir)")
+    ap.add_argument("--check", action="store_true",
+                    help="compare the existing render against the script; spend nothing")
     ap.add_argument("--voice", default=os.environ.get("ELEVENLABS_VOICE_ID", ""),
                     help="voice id (or ELEVENLABS_VOICE_ID)")
     ap.add_argument("--model", default=DEFAULT_MODEL)
@@ -249,6 +313,9 @@ def main():
     if args.dry_run:
         report(sections)
         return 0
+
+    if args.check:
+        return check_render(src, sections, args)
 
     if not args.voice:
         sys.exit("no voice id: pass --voice or set ELEVENLABS_VOICE_ID")
