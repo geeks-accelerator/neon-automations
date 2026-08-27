@@ -303,6 +303,14 @@ def render(path, kind, fm, doc_id, events, back, docs_root, is_readme, living_ci
         ref = fm.get(field)
         if ref and ref in events.get(target_kind, {}):
             related.append((label, events[target_kind][ref][0]))
+    # `observations:` as a list. A plan that cites three of them wrote the plural
+    # and got nothing: the singular field above did not match, so the ids
+    # rendered nowhere and validate.py cross-checked them nowhere either -- a
+    # field produced and consumed by nothing, which is the defect the
+    # observations it pointed at are about.
+    for ref in (fm.get("observations") or []):
+        if ref in events.get("observations", {}):
+            related.append(("Observation", events["observations"][ref][0]))
     # A living directory whose cite field *is* `research` renders that same edge
     # as "Derives from" below. Without this guard the scan appears twice under
     # two labels, because the dedup key is (label, target) and the labels differ.
