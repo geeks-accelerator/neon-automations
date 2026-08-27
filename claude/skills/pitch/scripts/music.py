@@ -22,7 +22,6 @@ fades to the narration's measured length.
 import argparse
 import hashlib
 import json
-import os
 import sys
 import urllib.error
 import urllib.request

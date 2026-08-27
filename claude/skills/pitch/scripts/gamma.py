@@ -98,16 +98,22 @@ def outline_body(text):
     return "\n---\n".join(p for p in parts[1:] if p.strip()) if len(parts) > 1 else text
 
 
-def download(url, dest_dir, prefix="slide"):
+def download(url, dest_dir, prefix="slide", suffix="png"):
     """Fetch the export. PNG exports arrive as a zip of one file per card;
-    a single-image export arrives as the image itself."""
+    a pdf or pptx export arrives as the single file itself.
+
+    `suffix` follows --export. It used to be hard-coded to `png`, so
+    `--export pdf` wrote a PDF into `slide.png` -- a file every downstream
+    reader opens by extension.
+    """
     req = urllib.request.Request(url, headers={"User-Agent": UA})
     with urllib.request.urlopen(req, timeout=300) as r:
         blob = r.read()
     dest_dir.mkdir(parents=True, exist_ok=True)
     # Same hazard deck.py has: a re-run producing fewer cards leaves orphans
     # under numbers the assembler globs by, and it would cut a video from two
-    # decks without failing.
+    # decks without failing. Only the png route lands under those numbers, so
+    # only it needs clearing.
     for f in sorted(dest_dir.glob("[0-9][0-9]-*.png")):
         f.unlink()
     if blob[:2] == b"PK":
@@ -128,7 +134,7 @@ def download(url, dest_dir, prefix="slide"):
                 out.write_bytes(z.read(m))
                 names.append(out)
         return names
-    out = dest_dir / f"{prefix}.png"
+    out = dest_dir / f"{prefix}.{suffix}"
     out.write_bytes(blob)
     return [out]
 
@@ -218,7 +224,7 @@ def main():
         export_url = export_url[0]
 
     out_dir = Path(args.out) if args.out else build_dir(src, f"{src.stem}-slides")
-    files = download(export_url, out_dir)
+    files = download(export_url, out_dir, suffix=args.export)
     print(f"\n  {len(files)} file(s) -> {out_dir}")
     for f in files:
         print(f"    {f.name}")

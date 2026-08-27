@@ -31,8 +31,31 @@ from pathlib import Path
 
 from paths import build_root
 
-CLAIM_RE = re.compile(r"^\|\s*(C-\d+)\s*\|\s*(.+?)\s*\|\s*`(\w+)`\s*\|\s*(.+?)\s*\|\s*$")
+# The tag cell holds one tag, or -- for a composite built from rows already in
+# the ledger -- two, which schemas.md permits explicitly. Requiring exactly one
+# made every composite row fail to match, and a row that does not match is not
+# reported: it is dropped, and the claim count and extracted percentage this
+# page publishes are computed from what survived. A published number quietly
+# excluding rows is the failure the ledger exists to prevent, so the cell takes
+# one or more tags and unknown shapes are counted and named rather than lost.
+CLAIM_RE = re.compile(
+    r"^\|\s*(C-\d+)\s*\|\s*(.+?)\s*\|\s*((?:`\w+`[\s,]*)+)\|\s*(.+?)\s*\|\s*$")
+CLAIM_ID_RE = re.compile(r"^\|\s*(C-\d+)\s*\|")
+TAG_RE = re.compile(r"`(\w+)`")
 TAG_CLASS = {"EXTRACTED": "ex", "RESEARCHED": "re", "ASSERTED": "as", "CHECKED": "ch"}
+
+
+def read_or_exit(path):
+    """A missing pitch file is a message, not a traceback.
+
+    claims.md, the-ask.md and README.md were all read positionally, so
+    publishing an incomplete tree raised FileNotFoundError from three different
+    call sites and said nothing about which step had not run.
+    """
+    try:
+        return path.read_text(encoding="utf-8")
+    except OSError:
+        sys.exit(f"no {path.name} at {path} -- run the pitch's full mode first")
 
 
 def md_inline(s):
@@ -42,13 +65,23 @@ def md_inline(s):
     s = re.sub(r"`([^`]+)`", r"<code>\1</code>", s)
     s = re.sub(r"\*\*([^*]+)\*\*", r"<strong>\1</strong>", s)
     s = re.sub(r"(?<!\*)\*([^*]+)\*(?!\*)", r"<em>\1</em>", s)
-    s = re.sub(r"\[([^\]]+)\]\(([^)]+)\)", r'<a href="\2">\1</a>', s)
+    # The href is escaped as an attribute, not left as captured: html.escape
+    # here runs with quote=False so prose reads naturally, which left a double
+    # quote inside a link target free to close the attribute and open another.
+    s = re.sub(r"\[([^\]]+)\]\(([^)]+)\)",
+               lambda m: f'<a href="{html.escape(m.group(2), quote=True)}">{m.group(1)}</a>', s)
     return s
 
 
 def read_claims(pitch):
-    rows, fenced = [], False
-    for line in (pitch / "claims.md").read_text(encoding="utf-8").splitlines():
+    """Every `| C-NNN |` row, as (id, claim, [tags], citation).
+
+    Returns the unparsed ids too. A row this cannot read is a row the page
+    would omit while still reporting a total, so the caller refuses rather
+    than publishing a count that silently excludes it.
+    """
+    rows, unparsed, fenced = [], [], False
+    for line in read_or_exit(pitch / "claims.md").splitlines():
         if line.lstrip().startswith("```"):
             fenced = not fenced
             continue
@@ -56,8 +89,11 @@ def read_claims(pitch):
             continue
         m = CLAIM_RE.match(line)
         if m:
-            rows.append(m.groups())
-    return rows
+            cid, claim, tagcell, cite = m.groups()
+            rows.append((cid, claim, TAG_RE.findall(tagcell), cite))
+        elif CLAIM_ID_RE.match(line):
+            unparsed.append(CLAIM_ID_RE.match(line).group(1))
+    return rows, unparsed
 
 
 def read_fm(path, key):
@@ -120,7 +156,7 @@ def duration(audio_dir, unit):
 def read_ask(pitch):
     """The itemized table out of the-ask.md -- the reasonable column."""
     out, seen = [], False
-    for line in (pitch / "the-ask.md").read_text(encoding="utf-8").splitlines():
+    for line in read_or_exit(pitch / "the-ask.md").splitlines():
         if line.startswith("| line |"):
             seen = True
             continue
@@ -135,10 +171,49 @@ def read_ask(pitch):
     return out
 
 
+def verifiability(repo_url):
+    """What a reader can and cannot follow -- which depends on the project.
+
+    This was a fixed paragraph asserting the repository is "private, and
+    staying private". True of the tenant it was written for and false for any
+    other consumer of this skill, published as fact on a page whose whole
+    argument is that unbacked claims get tagged. Visibility is an input now.
+
+    The default is the private wording, because understating what a reader can
+    verify costs them nothing and overstating it is the failure being avoided.
+    """
+    if repo_url:
+        u = html.escape(repo_url, quote=True)
+        return f"""<h2>What you can check</h2>
+<div class=note>
+<p>The project repository is <strong>public</strong>. Every <code>EXTRACTED</code> claim below
+cites a file, a commit, or a re-runnable command, and you can follow all of them at
+<a href="{u}">{html.escape(repo_url)}</a>.</p>
+<p>A tag states what kind of evidence stands behind a claim; whether a reader can reach it is a
+separate fact. Here both are on offer, so check the ones that matter to you rather than taking
+the tag's word for it.</p>
+</div>"""
+    return """<h2>What you cannot check, and why</h2>
+<div class=note>
+<p>The project repository is <strong>private</strong>. Every <code>EXTRACTED</code> claim below
+cites a file, a commit, or a re-runnable command — honestly — and <strong>you cannot follow any
+of them.</strong></p>
+<p>That is worth saying rather than wording around. A tag states what kind of evidence stands
+behind a claim; whether a reader can reach it is a separate fact, and publishing the first
+without the second would claim a verifiability that is not being offered.</p>
+<p>What is open: the <a href="https://github.com/geeks-accelerator/neon-automations">tooling that
+produced this pitch</a> is public, so the <em>method</em> is fully checkable even where the
+subject is not. Anything cited here can be shown on request.</p>
+</div>"""
+
+
 def page(ctx):
+    def tags(ts):
+        return " ".join(f'<span class="tag {TAG_CLASS.get(x, "as")}">{x}</span>' for x in ts)
+
     claims = "\n".join(
         f'<tr><td class="id">{c[0]}</td><td>{md_inline(c[1])}</td>'
-        f'<td><span class="tag {TAG_CLASS.get(c[2],"as")}">{c[2]}</span></td>'
+        f'<td>{tags(c[2])}</td>'
         f'<td class="cite">{md_inline(c[3])}</td></tr>'
         for c in ctx["claims"])
     ask = "\n".join(f"<tr><td>{md_inline(a)}</td><td class=num>{md_inline(b)}</td></tr>"
@@ -192,7 +267,7 @@ footer{{margin-top:60px;padding-top:22px;border-top:1px solid var(--line);color:
 <p class=lead>{md_inline(ctx['lead'])}</p>
 </header>
 
-<video controls preload="metadata" playsinline poster="media/poster.png">
+<video controls preload="metadata" playsinline{ctx['poster']}>
 <source src="media/round.mp4" type="video/mp4">
 </video>
 <p class=cite>{ctx['cite']}</p>
@@ -214,26 +289,16 @@ hit stays visible next to the number it got.</p>
 
 <h2>What is actually built</h2>
 <div class=big>
-<div><b>0</b><span>lines of product code</span></div>
 <div><b>{ctx['n_claims']}</b><span>claims in this ledger</span></div>
 <div><b>{ctx['pct']}%</b><span>backed by the repository</span></div>
 <div><b>{ctx['risk']}</b><span>of the riskiest {ctx['risk_n']}, extracted</span></div>
 </div>
-<p>The second number is the real one. Most of what this project leans on is a bet about
-readers, and no repository can demonstrate anything about its readers.</p>
+<p>The second number is the real one. A pitch can be four-fifths extracted and still rest
+entirely on the fifth, so what matters is whether the repository demonstrates the things this
+pitch leans on. Assumptions about an audience score zero structurally — no repository can
+demonstrate anything about its readers.</p>
 
-<h2>What you cannot check, and why</h2>
-<div class=note>
-<p>The project repository is <strong>private, and staying private</strong>. Every
-<code>EXTRACTED</code> claim below cites a file, a commit, or a re-runnable command — honestly —
-and <strong>you cannot follow any of them.</strong></p>
-<p>That is worth saying rather than wording around. A tag states what kind of evidence stands
-behind a claim; whether a reader can reach it is a separate fact, and publishing the first
-without the second would claim a verifiability that is not being offered.</p>
-<p>What is open: the <a href="https://github.com/geeks-accelerator/neon-automations">tooling that
-produced this pitch</a> is public, so the <em>method</em> is fully checkable even where the
-subject is not. Anything cited here can be shown on request.</p>
-</div>
+{ctx['verifiability']}
 
 <h2>The ledger — {ctx['n_claims']} claims</h2>
 <p>Every claim this pitch makes, tagged with the kind of evidence behind it.
@@ -259,6 +324,9 @@ def main():
     ap.add_argument("project", help="path to the private project (contains docs/pitch/)")
     ap.add_argument("--out", required=True, help="publishing directory")
     ap.add_argument("--round", default=None, help="round record (default: newest)")
+    ap.add_argument("--repo-url", default=None, metavar="URL",
+                    help="the project repository, if it is public and a reader can follow the "
+                         "citations. Omitted means private, and the page says so")
     ap.add_argument("--dry-run", action="store_true")
     args = ap.parse_args()
 
@@ -271,10 +339,36 @@ def main():
     if rec is None:
         sys.exit("no round record found")
 
-    claims = read_claims(pitch)
-    ex = sum(1 for c in claims if c[2] == "EXTRACTED")
-    idx = (pitch / "README.md").read_text(encoding="utf-8")
-    rm = re.search(r"riskiest[^:]*:\s*\*?\*?([\d.]+)\s*of\s*(\d+)", idx, re.I)
+    claims, unparsed = read_claims(pitch)
+    if unparsed:
+        sys.exit(f"{len(unparsed)} claim row(s) could not be parsed: {', '.join(unparsed)}\n"
+                 "Publishing would report a total that excludes them. Fix the rows to the\n"
+                 "shape in schemas.md -- | C-NNN | claim | `TAG` | citation | -- and re-run.")
+    ex = sum(1 for c in claims if "EXTRACTED" in c[2])
+    composite = sum(1 for c in claims if len(c[2]) > 1)
+    idx = read_or_exit(pitch / "README.md")
+    # Tolerate the emphasis the index actually uses. `**0.5** of 3` failed the
+    # earlier pattern -- it consumed the opening asterisks and then met the
+    # closing pair before `of` -- and the page published "? of ?" for the
+    # number gate 2 calls the real one.
+    rm = re.search(r"riskiest[^:\n]*:\s*\**\s*([\d.]+)\s*\**\s*of\s*\**\s*(\d+)",
+                   idx, re.I)
+    if not rm:
+        print("  ! no riskiest-three figure found in docs/pitch/README.md --\n"
+              "    gate 2 wants both numbers, and the page will show '?' for the second.")
+
+    # Renders live under build/pitch/<round-id>/, scoped to the round being
+    # published rather than to whatever ran last -- so republishing turn 1
+    # after turn 2 rendered still finds turn 1's video.
+    build = build_root(pitch, rec.stem)
+
+    # The poster used to be looked for in `gamma-slides/` alone -- a leaf no
+    # script writes by default (gamma.py on deck-outline.md lands in
+    # `deck-outline-slides/`), so the copy never fired while the page emitted
+    # poster="media/poster.png" regardless, and every published video carried a
+    # broken poster. Take card 1 from whichever slide directory this round has.
+    poster_src = next(
+        (m for d in sorted(build.glob("*-slides")) for m in sorted(d.glob("01-*.png"))), None)
 
     turn = read_fm(rec, "turn") or "1"
     ctx = {
@@ -288,14 +382,12 @@ def main():
         "ask": read_ask(pitch),
         "threshold": read_fm(rec, "threshold") or "(no threshold recorded)",
         "turn": turn,
+        "verifiability": verifiability(args.repo_url),
+        "poster": ' poster="media/poster.png"' if poster_src else "",
     }
     # Built here rather than interpolated in the template, because each half is
     # a measurement that may not exist yet and "Round 1 - None" is worse than a
     # shorter sentence.
-    # Renders live under build/pitch/<round-id>/, scoped to the round being
-    # published rather than to whatever ran last -- so republishing turn 1
-    # after turn 2 rendered still finds turn 1's video.
-    build = build_root(pitch, rec.stem)
     secs = duration(build / "two-minute-audio", "s")
     mins = duration(build / "long-form-audio", "m")
     cite = f"Round {turn}" + (f" &mdash; {secs}" if secs else "")
@@ -314,12 +406,22 @@ def main():
     proto_src = build / "prototype"
     ctx["prototype"] = ""
     if (proto_src / "index.html").exists():
+        # Counted, not stated. "eight of them" was a literal, so a prototype
+        # with six screens published a figure nothing measured -- on the page
+        # whose argument is that its numbers are receipts.
+        # The count says `pages`, which is what was actually counted: whether
+        # the entry page is a menu or the first screen is not something this
+        # can know, and a number derived from a guess is the defect being fixed.
+        n = len(list(proto_src.rglob("*.html")))
         ctx["prototype"] = (
             '<p class=cite style="margin-top:-6px">'
-            '<a href="prototype/">See the screens</a> &mdash; eight of them, covering one full '
-            'turn. Drawings rather than screenshots: none of it is built yet.</p>')
+            f'<a href="prototype/">See the screens</a> &mdash; {n} page'
+            f'{"s" if n != 1 else ""}. '
+            'Drawings rather than screenshots: none of it is built yet.</p>')
 
-    print(f"  {len(claims)} claims, {ex} extracted ({ctx['pct']}%)")
+    print(f"  {len(claims)} claims, {ex} extracted ({ctx['pct']}%)"
+          + (f", {composite} composite (counted as extracted)" if composite else ""))
+    print(f"  citations are {'public at ' + args.repo_url if args.repo_url else 'private'}")
     print(f"  riskiest {ctx['risk']} of {ctx['risk_n']}   ask lines: {len(ctx['ask'])}")
     print(f"  threshold: {ctx['threshold'][:64]}")
     if args.dry_run:
@@ -341,10 +443,11 @@ def main():
         n = sum(1 for _ in (out / "prototype").rglob("*") if _.is_file())
         print(f"  copied prototype/  ({n} file(s))")
 
-    first = sorted((build / "gamma-slides").glob("01-*.png"))
-    if first:
-        shutil.copy2(first[0], out / "media" / "poster.png")
-        print("  copied media/poster.png")
+    if poster_src:
+        shutil.copy2(poster_src, out / "media" / "poster.png")
+        print(f"  copied media/poster.png (from {poster_src.parent.name}/)")
+    else:
+        print("  no slide 1 found -- the video is published without a poster")
     print(f"\n  {out}")
     return 0
 

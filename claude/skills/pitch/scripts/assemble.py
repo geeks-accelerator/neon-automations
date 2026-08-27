@@ -34,6 +34,27 @@ def probe(path):
     return R.probe_duration(path)
 
 
+def probe_all(paths, required):
+    """Measured durations, or None for every one of them.
+
+    `--dry-run` exists so a runner with no encoder can check the plan -- the
+    segment mapping, a missing image, a slide count that does not match the
+    deck. None of that needs a duration, but every duration needed ffprobe, so
+    the documented "every --dry-run path is free of ffmpeg" was false and the
+    script died on a bare runner with a traceback rather than a message.
+
+    So probing is required for a real encode and optional for the plan. When it
+    is unavailable the plan still prints, with the timings marked absent rather
+    than guessed -- a fabricated duration in a pipeline whose whole argument is
+    "publish the measured number" would be the wrong repair.
+    """
+    if R.have("ffprobe"):
+        return [probe(p) for p in paths]
+    if required:
+        sys.exit("ffprobe not found on PATH (needed to measure the narration)")
+    return [None] * len(paths)
+
+
 def wrap(text, width=42):
     words, lines, cur = text.split(), [], ""
     for w in words:
@@ -48,9 +69,18 @@ def wrap(text, width=42):
 
 
 def srt_time(t):
+    """SRT wants HH:MM:SS,mmm -- and the milliseconds are load-bearing.
+
+    `int(s)` before the format spec truncated every boundary to a whole second,
+    so a cue could open a second before the sentence it captions, and two short
+    sentences whose true boundaries fell inside the same second produced a cue
+    with identical start and end -- which libass drops, silently. Captions are
+    the best-evidenced decision in this procedure; a dropped one is not visible
+    in any output the pipeline prints.
+    """
     h, rem = divmod(t, 3600)
     m, s = divmod(rem, 60)
-    return f"{int(h):02d}:{int(m):02d}:{int(s):06.3f}".replace(".", ",")
+    return f"{int(h):02d}:{int(m):02d}:{s:06.3f}".replace(".", ",")
 
 
 def sentences(text):
@@ -123,8 +153,9 @@ def main():
     if len(seg_files) != len(segments):
         sys.exit(f"{len(seg_files)} audio segments but {len(segments)} script segments -- "
                  "re-render; they must correspond one to one")
-    seg_dur = [probe(f) for f in seg_files]
-    measured_audio = probe(full_audio)
+    seg_dur = probe_all(seg_files, required=not args.dry_run)
+    measured_audio = probe_all([full_audio], required=not args.dry_run)[0]
+    timed = measured_audio is not None
 
     # The theme is generate-once and lives beside the script. Absent is fine --
     # a round without a bed is a round without a bed, not an error.
@@ -132,7 +163,7 @@ def main():
     theme_loops = 1
     if not theme.exists():
         theme = None
-    elif probe(theme) < measured_audio:
+    elif timed and probe(theme) < measured_audio:
         # Loop rather than demand a longer theme. The theme is generate-once by
         # design; regenerating it at full-mode length would cost roughly six
         # times as much AND come back a different piece of music, which defeats
@@ -151,7 +182,7 @@ def main():
         nums = by_seg.get(name.strip().lower(), [])
         if not nums:
             sys.exit(f"storyboard has no slides for segment {name!r}")
-        each = dur / len(nums)
+        each = (dur / len(nums)) if timed else None
         for n in nums:
             matches = sorted(slide_dir.glob(f"{n:02d}-*.png"))
             if not matches:
@@ -174,16 +205,21 @@ def main():
 
     if args.no_theme:
         theme = None
-    total = sum(d for _, d in plan)
-    print(f"{len(plan)} slides over {total:.1f}s of narration"
-          + (f"  |  bed: {theme.name}, ducked" if theme else "  |  no music bed"))
+    bed = f"  |  bed: {theme.name}, ducked" if theme else "  |  no music bed"
+    if timed:
+        print(f"{len(plan)} slides over {sum(d for _, d in plan):.1f}s of narration{bed}")
+    else:
+        print(f"{len(plan)} slides, durations unmeasured (no ffprobe){bed}")
     for p, d in plan:
-        print(f"  {d:5.1f}s  {p.name}")
+        print(f"  {d:5.1f}s  {p.name}" if timed else f"      ?  {p.name}")
 
     if args.dry_run:
         # The plan is where the mistakes live -- a wrong segment mapping, a
         # missing image, a slide count that does not match the deck. Checking it
         # without ffmpeg means CI can catch those on a runner with no encoder.
+        if not timed:
+            print("\n  note: ffprobe is absent, so slide timings are unknown. The mapping,"
+                  "\n  the image lookup and the counts above are still checked.")
         print("\n  (dry run -- nothing encoded)")
         return 0
 
