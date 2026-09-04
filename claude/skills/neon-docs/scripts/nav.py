@@ -390,6 +390,32 @@ def render_readme(path, kind, docs_root, events, living_kinds):
             fm = _fm(os.path.join(d, n))
             date, slug = n[:10], n[11:-3]
             out.append(f"| {date} | [{slug}]({n}) | {fm.get(col, '—')} |")
+    # Subdirectories hold evidence rather than records -- a corpus, an audit set --
+    # and entries() deliberately does not recurse into them, because an 80-file
+    # distillation is not eighty records. The validator warns that they are skipped;
+    # without this section the index does not mention them at all, so a reader has no
+    # way to reach them except by already knowing they exist. Invisible and unlisted
+    # are different problems and this one is the index's.
+    subs = []
+    for n in sorted(os.listdir(d)):
+        full = os.path.join(d, n)
+        if not os.path.isdir(full) or n.startswith("."):
+            continue
+        count = sum(1 for _, _, fs in os.walk(full) for f in fs if f.endswith(".md"))
+        if not count:
+            continue
+        target = f"{n}/README.md" if os.path.exists(os.path.join(full, "README.md")) else f"{n}/"
+        subs.append((n, count, target))
+    if subs:
+        out += ["", "## Collections", "",
+                "Subdirectories holding evidence rather than records. They are **not validated "
+                "as records** -- a corpus is one body of work, not one record per file -- so "
+                "their naming, frontmatter and cross-references are unchecked. Each carries its "
+                "own README.", "",
+                "| collection | markdown files |", "|---|--:|"]
+        for n, count, target in subs:
+            out.append(f"| [`{n}`]({target}) | {count} |")
+
     out += ["", f"Conventions, schema, and the validator: [neon-docs]({SKILL_URL}).",
             "", INDEX_END]
     return "\n".join(out)
