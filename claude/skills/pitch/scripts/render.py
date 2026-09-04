@@ -33,7 +33,7 @@ import urllib.error
 import urllib.request
 from pathlib import Path
 
-from paths import build_dir
+from paths import build_dir, build_root
 
 ELEVENLABS_BASE_URL = "https://api.elevenlabs.io/v1"
 DEFAULT_MODEL = "eleven_multilingual_v2"
@@ -59,6 +59,28 @@ INDEX_RE = re.compile(r"<!--\s*index:begin\s*-->.*?<!--\s*index:end\s*-->", re.S
 
 class ElevenLabsError(Exception):
     pass
+
+
+def rounds_with_render(src, leaf):
+    """Every round id under build/pitch/ holding a render of this script.
+
+    `build_dir` resolves an unpinned path to the NEWEST round record, which is
+    right for producing and wrong for checking: opening round N+1's record --
+    before it has rendered anything -- moved --check onto an empty directory, so
+    a diverged render published for round N reported "no render to check" and
+    exited 0. A gate that passes because it is looking at the wrong place is
+    worse than no gate.
+
+    So --check names what it found elsewhere instead of going quiet.
+    """
+    try:
+        pitch_builds = build_root(src).parent
+    except SystemExit:
+        return []
+    if not pitch_builds.is_dir():
+        return []
+    return sorted(d.name for d in pitch_builds.iterdir()
+                  if (d / leaf / "cache.json").exists())
 
 
 # --- parsing -----------------------------------------------------------------
@@ -231,10 +253,19 @@ def check_render(src, sections, args):
 
     Exit 1 on any divergence, so this is usable as a gate.
     """
-    out_dir = Path(args.out) if args.out else build_dir(src, f"{src.stem}-audio")
+    leaf = f"{src.stem}-audio"
+    out_dir = Path(args.out) if args.out else build_dir(src, leaf, args.round)
+    print(f"  checking {out_dir}")
     cache_path = out_dir / "cache.json"
     if not cache_path.exists():
-        print(f"  no render to check: {cache_path} does not exist")
+        elsewhere = [r for r in rounds_with_render(src, leaf) if r != out_dir.parent.name]
+        if elsewhere:
+            print(f"  no render here, but {len(elsewhere)} round(s) hold one: "
+                  + ", ".join(elsewhere)
+                  + "\n  This is the wrong directory, not a clean check. Pin it with"
+                    "\n  --round <id> (or --out) and run again.")
+            return 1
+        print(f"  no render to check anywhere: {cache_path} does not exist")
         return 0
     try:
         cache = json.loads(cache_path.read_text())
@@ -282,6 +313,10 @@ def main():
     ap.add_argument("--dry-run", action="store_true",
                     help="parse and report only; no API key, no ffmpeg, no cost")
     ap.add_argument("--out", default=None, help="output directory (default: this round's build dir)")
+    ap.add_argument("--round", default=None, metavar="ID",
+                    help="round id to scope the build directory to (default: the newest "
+                         "round record). Pin it when checking or re-rendering a round that "
+                         "is no longer the newest")
     ap.add_argument("--check", action="store_true",
                     help="compare the existing render against the script; spend nothing")
     ap.add_argument("--voice", default=os.environ.get("ELEVENLABS_VOICE_ID", ""),
@@ -294,9 +329,8 @@ def main():
         ap.error("a script path is required (or pass --list-voices)")
 
     if args.list_voices:
-        import json as _json
         data, _ = elevenlabs_request("/voices")
-        for v in _json.loads(data).get("voices", []):
+        for v in json.loads(data).get("voices", []):
             lab = v.get("labels") or {}
             bits = ", ".join(f"{k}={val}" for k, val in list(lab.items())[:4])
             print(f"  {v.get('voice_id',''):<24} {v.get('name','')[:22]:<24} {bits[:64]}")
@@ -323,7 +357,7 @@ def main():
         if not have(b):
             sys.exit(f"{b} not found on PATH (needed to concatenate and measure)")
 
-    out_dir = Path(args.out) if args.out else build_dir(src, f"{src.stem}-audio")
+    out_dir = Path(args.out) if args.out else build_dir(src, f"{src.stem}-audio", args.round)
     seg_dir = out_dir / "segments"
     seg_dir.mkdir(parents=True, exist_ok=True)
     cache_path = out_dir / "cache.json"
@@ -368,6 +402,22 @@ def main():
         prev_text = text
         files.append(seg)
         rendered += 1
+
+    # Prune what the script no longer says. Renaming a heading changes a
+    # segment's filename, so the old .mp3 survived and assemble.py's
+    # one-to-one guard refused with "re-render" -- advice that could not clear
+    # it, since neither a re-render nor --force ever deleted anything. deck.py
+    # already clears its stale slides for exactly this reason; this is that fix
+    # on the audio side, and it keeps ORPHANED in --check meaning "the script
+    # moved after the render" rather than "a heading was renamed once".
+    keep = {f.name for f in files}
+    stale = [f for f in sorted(seg_dir.glob("*.mp3")) if f.name not in keep]
+    for f in stale:
+        f.unlink()
+    for name in [k for k in cache if k not in keep]:
+        del cache[name]
+    if stale:
+        print(f"  cleared {len(stale)} segment(s) the script no longer contains")
 
     cache_path.write_text(json.dumps(cache, indent=2))
     full = out_dir / f"{src.stem}.mp3"

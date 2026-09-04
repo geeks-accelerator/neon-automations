@@ -170,7 +170,15 @@ def main():
     if args.since:
         new = changed_since(os.path.dirname(docs), args.since)
         if new is None:
-            print(f"\n(could not read git history at {os.path.dirname(docs)})")
+            # Trigger 7 exists because research can land that contradicts a live
+            # claim while mode derivation reports "no trigger fired". A --since
+            # that cannot read history answers nothing, and returning 0 makes
+            # that indistinguishable from "nothing changed" -- the same silence
+            # the trigger was added to break.
+            print(f"\n--since could not read git history at {os.path.dirname(docs)}."
+                  "\nThis is not an answer of 'no new research'. Re-run where the history"
+                  "\nis readable, or drop --since and check trigger 7 by hand.")
+            return 1
         else:
             hit = [s for s in rows if s["id"] in new]
             print(f"\nchanged since {args.since}: {len(hit)}")

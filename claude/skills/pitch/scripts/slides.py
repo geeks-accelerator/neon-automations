@@ -229,6 +229,28 @@ def main():
         full = f"{prompt.strip()}, {style}" if style else prompt.strip()
         digest = hashlib.sha256(f"{args.model}|{full}".encode()).hexdigest()[:16]
         dest = out_dir / f"{n:02d}-{re.sub(r'[^a-z0-9]+', '-', title.strip().lower())[:28]}.png"
+
+        # A slide's filename carries its title, so retitling card 3 leaves
+        # `03-old-title.png` beside `03-new-title.png` -- and assemble.py globs
+        # by number, so it refuses with "slide 3 is ambiguous" until someone
+        # deletes the directory by hand. deck.py clears its stale slides for
+        # this reason; here the same number can only be held by one file.
+        #
+        # Rename rather than delete when the image is still right: the digest
+        # covers the model and the prompt, not the title, so a retitled card
+        # with an unchanged prompt keeps the picture it already paid for.
+        for other in sorted(out_dir.glob(f"{n:02d}-*.png")):
+            if other == dest:
+                continue
+            if cache.get(other.name) == digest and not args.force:
+                other.replace(dest)
+                cache[dest.name] = digest
+                print(f"  {n:>2}. retitled, image kept")
+            else:
+                other.unlink()
+            cache.pop(other.name, None)
+            cache_path.write_text(json.dumps(cache, indent=2))
+
         if dest.exists() and cache.get(dest.name) == digest and not args.force:
             print(f"  {n:>2}. unchanged, reused")
             reused += 1
