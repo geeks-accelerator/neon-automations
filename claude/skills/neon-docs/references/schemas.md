@@ -65,10 +65,15 @@ release: v0.3.0              # required once status is shipped
 ---
 ```
 
-**status:** `draft` · `approved` · `in-progress` · `shipped` · `abandoned`
+**status:** `draft` · `approved` · `in-progress` · `shipped` · `complete` · `abandoned`
 
 `proposal` must name an existing proposal. `release` is what the attestation service reads,
 so it is the join between a markdown file and a provable delivery.
+
+**`shipped` vs `complete`.** `shipped` asserts a delivery and requires `release:` naming a tag
+that exists. `complete` says every step is done and there is nothing to tag — a ledger pass, a
+research corpus, a documentation plan. Use `complete` rather than cutting a tag to satisfy the
+field: a tag on a release containing no release is exactly what the tag check exists to prevent.
 
 ---
 

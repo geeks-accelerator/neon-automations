@@ -85,7 +85,14 @@ EVENTS = {
     "plans": {
         "date_field": "opened",
         "required": ["id", "title", "proposal", "status", "opened"],
-        "status": ["draft", "approved", "in-progress", "shipped", "abandoned"],
+        # `complete` is `shipped` without a release. Every step is done and there is
+        # no artifact to tag -- a plan whose deliverable is documents, a ledger pass, a
+        # research corpus. Before it existed such a plan sat at `in-progress` for ever,
+        # because `shipped` requires a `release:` naming a tag that resolves and cutting
+        # one to satisfy the field would point the attestation service at a release
+        # containing no release. That is the fraud the tag check exists to prevent, so
+        # the status is the fix and the check stays untouched.
+        "status": ["draft", "approved", "in-progress", "shipped", "complete", "abandoned"],
     },
     "issues": {
         "date_field": "opened",
@@ -483,7 +490,8 @@ def cross_check(data):
     for pid, (path, fm) in proposals.items():
         if fm.get("status") in ("building", "shipped"):
             kids = by_proposal.get(pid, [])
-            if not any(k.get("status") in ("approved", "in-progress", "shipped") for k in kids):
+            if not any(k.get("status") in ("approved", "in-progress", "shipped", "complete")
+                       for k in kids):
                 err(path, f"status is {fm['status']} but no approved plan references it")
         if "tips" in fm or "tips_usd" in fm:
             err(path, "tip totals belong in the platform database, not in frontmatter -- "
